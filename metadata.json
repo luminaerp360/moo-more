@@ -1,0 +1,6 @@
+{
+  "name": "Moo & More Dairy Farm",
+  "description": "Commercial website for Moo & More Dairy Farm in Dadira, Kenya. Farm-fresh cow milk, handcrafted yoghurts, wholesale dairy supply, farm tours, and livestock breeding services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
