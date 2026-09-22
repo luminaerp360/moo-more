@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { NavPage } from './types';
+import { NavPage, ADMIN_PAGES } from './types';
+import { useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { OrderModal } from './components/OrderModal';
 import { LegalModal } from './components/LegalModals';
+import { AdminLayout } from './components/admin/AdminLayout';
 import { HomePage } from './pages/HomePage';
 import { ShopPage } from './pages/ShopPage';
 import { ProductsPage } from './pages/ProductsPage';
@@ -18,6 +20,17 @@ import { ServicesPage } from './pages/ServicesPage';
 import { LivestockPage } from './pages/LivestockPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { FarmTourBooking } from './components/FarmTourBooking';
+import { LoginPage } from './pages/LoginPage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { HomeContentManager } from './pages/admin/HomeContentManager';
+import { AboutManager } from './pages/admin/AboutManager';
+import { FarmServicesManager } from './pages/admin/FarmServicesManager';
+import { GalleryManager } from './pages/admin/GalleryManager';
+import { BlogsManager } from './pages/admin/BlogsManager';
+import { TeamManager } from './pages/admin/TeamManager';
+import { ProductsManager } from './pages/admin/ProductsManager';
+import { CategoriesManager } from './pages/admin/CategoriesManager';
+import { OrdersManager } from './pages/admin/OrdersManager';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>('home');
@@ -25,23 +38,30 @@ export default function App() {
   const [preselectedProduct, setPreselectedProduct] = useState<string | undefined>(undefined);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
 
+  const { isAuthenticated, isAdmin } = useAuth();
+
+  const isAdminPage = (page: NavPage) => ADMIN_PAGES.includes(page);
+  const showPublicChrome = currentPage !== 'login' && !isAdminPage(currentPage);
+
   // Sync hash routing
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').toLowerCase();
       const validPages: string[] = [
-        'home', 
-        'shop', 
-        'products', 
-        'about', 
-        'farm', 
-        'blog', 
-        'gallery', 
-        'contact', 
-        'services', 
-        'livestock', 
-        'community', 
-        'booking'
+        'home',
+        'shop',
+        'products',
+        'about',
+        'farm',
+        'blog',
+        'gallery',
+        'contact',
+        'services',
+        'livestock',
+        'community',
+        'booking',
+        'login',
+        ...ADMIN_PAGES,
       ];
 
       if (validPages.includes(hash)) {
@@ -56,6 +76,14 @@ export default function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  // Guard: bounce unauthenticated visitors away from admin pages
+  useEffect(() => {
+    if (isAdminPage(currentPage) && !isAuthenticated) {
+      window.location.hash = 'login';
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, isAuthenticated]);
 
   const handleNavigate = (page: NavPage) => {
     if (page === 'privacy' || page === 'terms') {
@@ -72,7 +100,65 @@ export default function App() {
     setIsOrderModalOpen(true);
   };
 
+  const renderAdminContent = () => {
+    switch (currentPage) {
+      case 'admin/home-content':
+        return <HomeContentManager />;
+      case 'admin/about':
+        return <AboutManager />;
+      case 'admin/farm-services':
+        return <FarmServicesManager />;
+      case 'admin/gallery':
+        return <GalleryManager />;
+      case 'admin/blogs':
+        return <BlogsManager />;
+      case 'admin/team':
+        return <TeamManager />;
+      case 'admin/products':
+        return <ProductsManager />;
+      case 'admin/categories':
+        return <CategoriesManager />;
+      case 'admin/orders':
+        return <OrdersManager />;
+      default:
+        return <AdminDashboard onNavigate={handleNavigate} />;
+    }
+  };
+
   const renderCurrentPage = () => {
+    if (currentPage === 'login') {
+      return <LoginPage onNavigate={handleNavigate} />;
+    }
+
+    if (isAdminPage(currentPage)) {
+      if (!isAuthenticated) {
+        return <LoginPage onNavigate={handleNavigate} />;
+      }
+      if (!isAdmin) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-[#F4F7F4] px-4">
+            <div className="bg-white rounded-xl border border-stone-200 shadow-md p-8 max-w-md text-center">
+              <h2 className="text-xl font-bold text-[#0F3020] font-serif-heading">Access Denied</h2>
+              <p className="text-sm text-stone-500 mt-2">
+                Your account does not have administrator privileges.
+              </p>
+              <button
+                onClick={() => handleNavigate('home')}
+                className="mt-5 px-4 py-2 bg-[#15803D] hover:bg-[#166534] text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                Back to Website
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <AdminLayout currentPage={currentPage} onNavigate={handleNavigate}>
+          {renderAdminContent()}
+        </AdminLayout>
+      );
+    }
+
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={handleNavigate} onOpenOrder={handleOpenOrder} />;
@@ -105,12 +191,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-stone-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
-      {/* Top Navbar */}
-      <Navbar
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onOpenOrder={() => handleOpenOrder()}
-      />
+      {/* Top Navbar (hidden on login/admin) */}
+      {showPublicChrome && (
+        <Navbar
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onOpenOrder={() => handleOpenOrder()}
+        />
+      )}
 
       {/* Main Page Body with Animated Route Transitions */}
       <main className="flex-1 overflow-x-hidden">
@@ -127,14 +215,16 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Site Footer */}
-      <Footer
-        onNavigate={handleNavigate}
-        onOpenOrder={() => handleOpenOrder()}
-      />
+      {/* Site Footer (hidden on login/admin) */}
+      {showPublicChrome && (
+        <Footer
+          onNavigate={handleNavigate}
+          onOpenOrder={() => handleOpenOrder()}
+        />
+      )}
 
-      {/* Persistent Floating WhatsApp Help & Order Widget */}
-      <FloatingWhatsApp />
+      {/* Persistent Floating WhatsApp Help & Order Widget (public only) */}
+      {showPublicChrome && <FloatingWhatsApp />}
 
       {/* Interactive Order Milk / Product Modal */}
       <OrderModal

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavPage } from '../types';
 import { FARM_INFO } from '../data/farmData';
+import { useAuth } from '../context/AuthContext';
 import { BrandLogo } from './BrandLogo';
 import { 
   Phone, 
@@ -12,7 +13,10 @@ import {
   ShoppingBag, 
   Calendar,
   MessageCircle,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -28,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isAdmin, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,12 +51,19 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Blog', page: 'blog' },
     { label: 'Gallery', page: 'gallery' },
     { label: 'Contact', page: 'contact' },
+    ...(isAdmin ? [{ label: 'Admin', page: 'admin' as NavPage }] : []),
   ];
 
   const handleNavClick = (page: NavPage) => {
     onNavigate(page);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    onNavigate('home');
   };
 
   return (
@@ -169,6 +181,43 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Calendar className="w-3.5 h-3.5 text-[#15803D]" />
               <span>Book Tour</span>
             </motion.button>
+            {!isAuthenticated ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleNavClick('login')}
+                className="p-2 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors"
+                title="Admin Login"
+                aria-label="Admin Login"
+              >
+                <LogIn className="w-4 h-4" />
+              </motion.button>
+            ) : (
+              <>
+                {isAdmin && (
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleNavClick('admin')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#0F3020] hover:bg-[#0A2216] rounded-lg transition-colors"
+                    title="Admin Dashboard"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Admin</span>
+                  </motion.button>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
+                  className="p-2 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </motion.button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu & Quick Order Trigger */}
@@ -181,6 +230,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ShoppingBag className="w-3 h-3" />
               <span>Order</span>
             </motion.button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => handleNavClick('login')}
+                className="p-1.5 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors"
+                aria-label="Admin Login"
+                title="Admin Login"
+              >
+                <LogIn className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="p-1.5 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                aria-label="Logout"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-1.5 text-[#0F3020] hover:bg-stone-100 rounded-lg focus:outline-none"
@@ -243,6 +311,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>Book Tour</span>
                 </button>
               </div>
+
+              {!isAuthenticated ? (
+                <button
+                  onClick={() => handleNavClick('login')}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#0F3020] text-white text-xs font-semibold rounded-lg"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Admin Login</span>
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleNavClick('admin')}
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#0F3020] text-white text-xs font-semibold rounded-lg"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Admin</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 border border-red-300 text-red-600 text-xs font-semibold rounded-lg"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
 
               <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
                 <a

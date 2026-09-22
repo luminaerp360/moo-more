@@ -1,5 +1,9 @@
 import React from 'react';
 
+// Brand logo served from the live CMS (Cloudinary, same as the old website).
+export const BRAND_LOGO_URL =
+  'https://res.cloudinary.com/dpls4kcqa/image/upload/v1738835942/logo-removebg-preview_uyvdpa.png';
+
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'light' | 'dark';
@@ -31,7 +35,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         style={{ width: `${width}px`, height: `${height}px` }}
       >
         <img
-          src="/logo.svg"
+          src={BRAND_LOGO_URL}
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (img.src !== window.location.origin + '/logo.svg') {
+              img.src = '/logo.svg';
+            }
+          }}
           alt="Moo & More Dairy Farm Logo - It's all about quality"
           className="w-full h-full object-contain filter drop-shadow-sm"
           loading="eager"

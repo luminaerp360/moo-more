@@ -411,7 +411,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Moo & More Dairy has been my top supplier for years. Their milk is always fresh and of uncompromising quality!',
     category: 'distributor',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Bulk Fresh Cow Milk (200L Daily)',
     verified: true
@@ -424,7 +423,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their dairy cows are remarkably healthy and well-bred. I learned so much from visiting their Dadira pastures!',
     category: 'farmer',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'April 2026',
     product: 'Dairy AI Genetics & Pasture Tour',
     verified: true
@@ -437,7 +435,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'The strawberry and vanilla yoghurt they produce is the fastest-selling stock in my shop. My customers love it!',
     category: 'distributor',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Probiotic Strawberry Yoghurt 500ml',
     verified: true
@@ -450,7 +447,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'I only use Moo & More Dairy milk for my coffee and lattes. The natural creaminess and steam consistency are unmatched!',
     category: 'business',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'April 2026',
     product: 'Barista Whole Milk Supply (30L/day)',
     verified: true
@@ -463,7 +459,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their fresh dairy products and artisanal cheese are top-tier. Our breakfast buffet chefs love working with them!',
     category: 'hospitality',
-    avatar: 'https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'March 2026',
     product: 'Hospitality Dairy & Cream Supply',
     verified: true
@@ -476,7 +471,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Moo & More milk reminds me of my countryside childhood. Pure, sweet, unadulterated, and nutritious for my family!',
     category: 'consumer',
-    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Home Daily Delivery (3 Litres)',
     verified: true
@@ -489,7 +483,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their food-grade packaging is immaculate, and cold-chain compliance means zero spoilage. A truly dependable brand!',
     category: 'distributor',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'February 2026',
     product: 'Retail Packed Milk & Mala Crates',
     verified: true
@@ -502,7 +495,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'My children adore their fruit yoghurt cups and fresh milk. It is an essential part of our daily school breakfast!',
     category: 'consumer',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Family Yoghurt Variety Pack',
     verified: true
@@ -515,7 +507,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'I have tested numerous dairy brands across Western Kenya, but Moo & More consistently stands above the rest in purity.',
     category: 'consumer',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'April 2026',
     product: 'Traditional Maziwa Mala 500ml',
     verified: true
@@ -528,7 +519,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'I routinely recommend Moo & More live probiotic yoghurt to my gut-health patients. Pure fermentation with no gelatin fillers!',
     category: 'business',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'March 2026',
     product: 'Plain Natural Probiotic Yoghurt',
     verified: true
@@ -541,7 +531,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their whole milk brings authentic richness to our specialty chai and signature sauces. Highly recommended!',
     category: 'hospitality',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'April 2026',
     product: 'Commercial Kitchen Supply 50L',
     verified: true
@@ -554,7 +543,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'As a fellow dairy cattle keeper, I deeply admire their clean silage techniques and high-transmitting genetics. A beacon farm!',
     category: 'farmer',
-    avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Bovine Breeding Consultation',
     verified: true
@@ -567,7 +555,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Punctual morning deliveries, transparent lab quality checks, and top-tier milk fat percentage. My customers demand it!',
     category: 'distributor',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'May 2026',
     product: 'Weekly Wholesale Depot Milk Dispatch',
     verified: true
@@ -580,7 +567,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their golden butter and heavy cream elevate my viennoiserie and wedding cakes to perfection. Truly authentic taste!',
     category: 'business',
-    avatar: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'April 2026',
     product: 'Farm Fresh Heavy Cream & Butter',
     verified: true
@@ -593,7 +579,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     quote: 'Their chilled dairy consignments arrive fresh and in perfect condition every single dispatch. Exceptional professionalism!',
     category: 'distributor',
-    avatar: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=200&h=200&q=80',
     date: 'March 2026',
     product: 'Chilled Milk & Maziwa Mala Consignment',
     verified: true
@@ -607,7 +592,6 @@ export const TEAM_MEMBERS: TeamMember[] = [
     role: 'Farm Manager',
     bio: 'Oversees daily milking operations, cold chain logistics, and pasture management with over a decade of livestock experience in East Africa.',
     specialty: 'Herd Operations & Cold-Chain Logistics',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'
   },
   {
     id: 'dr-brenda-auma',
@@ -615,7 +599,6 @@ export const TEAM_MEMBERS: TeamMember[] = [
     role: 'Veterinary & Herd Health Officer',
     bio: 'Dedicated to preventative cow healthcare, vaccination scheduling, breeding synchronization, and humane animal welfare protocols.',
     specialty: 'Artificial Insemination & Bovine Medicine',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80'
   },
   {
     id: 'grace-nekesa',
@@ -623,7 +606,6 @@ export const TEAM_MEMBERS: TeamMember[] = [
     role: 'Dairy Processing & Quality Lead',
     bio: 'Directs the artisanal yoghurt incubation, testing, packaging, and food-safety hygiene standards at our on-site processing unit.',
     specialty: 'Probiotic Fermentation & Food Safety',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80'
   },
   {
     id: 'nutrition-team',
@@ -631,7 +613,6 @@ export const TEAM_MEMBERS: TeamMember[] = [
     role: 'Forage & Feed Specialists',
     bio: 'Formulates our high-yield dairy meal, tests fodder silage for peak crude protein, and trains local smallholder farmers on regenerative agriculture.',
     specialty: 'Total Mixed Ration (TMR) & Silage Agronomy',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
   }
 ];
 

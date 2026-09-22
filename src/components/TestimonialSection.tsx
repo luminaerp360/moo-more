@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'motion/react';
 import { TESTIMONIALS } from '../data/farmData';
 import { Testimonial } from '../types';
+import { PersonAvatar } from './PersonAvatar';
 import { 
   Star, 
   Quote, 
@@ -299,10 +300,11 @@ export const TestimonialSection: React.FC = () => {
                       "{prevReview.quote}"
                     </p>
                     <div className="flex items-center gap-2 text-xs font-bold text-stone-800">
-                      <img 
-                        src={prevReview.avatar} 
-                        alt={prevReview.name}
-                        className="w-7 h-7 rounded-full object-cover border border-emerald-600/30"
+                      <PersonAvatar
+                        src={prevReview.avatar}
+                        name={prevReview.name}
+                        className="w-7 h-7"
+                        iconClassName="w-3.5 h-3.5"
                       />
                       <span className="truncate">{prevReview.name}</span>
                     </div>
@@ -377,10 +379,12 @@ export const TestimonialSection: React.FC = () => {
                       <div className="pt-4 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3.5">
                           <div className="relative">
-                            <img
-                              src={currentReview.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80'}
-                              alt={currentReview.name}
-                              className="w-13 h-13 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#15803D]/60 shadow-sm"
+                            <PersonAvatar
+                              src={currentReview.avatar}
+                              name={currentReview.name}
+                              className="w-13 h-13 sm:w-14 sm:h-14"
+                              iconClassName="w-7 h-7 sm:w-8 sm:h-8"
+                              containerClassName="border-2 border-[#15803D]/60 shadow-sm"
                             />
                             <div className="absolute -bottom-1 -right-1 bg-[#15803D] text-white p-0.5 rounded-full ring-2 ring-white">
                               <CheckCircle2 className="w-3 h-3" />
@@ -437,10 +441,11 @@ export const TestimonialSection: React.FC = () => {
                       "{nextReview.quote}"
                     </p>
                     <div className="flex items-center gap-2 text-xs font-bold text-stone-800">
-                      <img 
-                        src={nextReview.avatar} 
-                        alt={nextReview.name}
-                        className="w-7 h-7 rounded-full object-cover border border-emerald-600/30"
+                      <PersonAvatar
+                        src={nextReview.avatar}
+                        name={nextReview.name}
+                        className="w-7 h-7"
+                        iconClassName="w-3.5 h-3.5"
                       />
                       <span className="truncate">{nextReview.name}</span>
                     </div>
@@ -547,10 +552,11 @@ export const TestimonialSection: React.FC = () => {
 
                   <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <img 
-                        src={review.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80'}
-                        alt={review.name}
-                        className="w-8 h-8 rounded-full object-cover border border-[#15803D]/40"
+                      <PersonAvatar
+                        src={review.avatar}
+                        name={review.name}
+                        className="w-8 h-8"
+                        iconClassName="w-4 h-4"
                       />
                       <div>
                         <div className="text-xs font-bold text-stone-900 leading-tight">
@@ -613,10 +619,11 @@ export const TestimonialSection: React.FC = () => {
 
                   <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <img 
-                        src={review.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80'}
-                        alt={review.name}
-                        className="w-8 h-8 rounded-full object-cover border border-[#15803D]/40"
+                      <PersonAvatar
+                        src={review.avatar}
+                        name={review.name}
+                        className="w-8 h-8"
+                        iconClassName="w-4 h-4"
                       />
                       <div>
                         <div className="text-xs font-bold text-stone-900 leading-tight">

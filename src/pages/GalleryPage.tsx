@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GALLERY_ITEMS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { GalleryItem, NavPage } from '../types';
 import { 
   Camera, 
@@ -20,6 +21,8 @@ interface GalleryPageProps {
 }
 
 export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate, onOpenOrder }) => {
+  const content = useSiteContent();
+  const galleryItems = content.galleryItems;
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
 
@@ -33,8 +36,8 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate, onOpenOrde
   ];
 
   const filteredItems = activeCategory === 'all'
-    ? GALLERY_ITEMS
-    : GALLERY_ITEMS.filter(item => item.category === activeCategory);
+    ? galleryItems
+    : galleryItems.filter(item => item.category === activeCategory);
 
   const openLightbox = (index: number) => {
     setSelectedPhotoIndex(index);

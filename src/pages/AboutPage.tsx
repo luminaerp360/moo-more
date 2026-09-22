@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { FARM_INFO, TEAM_MEMBERS, TIMELINE_MILESTONES } from '../data/farmData';
+import { FARM_INFO, TIMELINE_MILESTONES } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { NavPage } from '../types';
 import { TestimonialSection } from '../components/TestimonialSection';
 import { 
@@ -14,7 +15,8 @@ import {
   MapPin, 
   Award, 
   Sparkles,
-  UserCheck
+  UserCheck,
+  UserRound
 } from 'lucide-react';
 
 interface AboutPageProps {
@@ -23,13 +25,52 @@ interface AboutPageProps {
 }
 
 export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder }) => {
+  const content = useSiteContent();
+
+  const aboutHero = content.aboutHero;
+  const missionText = content.mission?.description || FARM_INFO.mission;
+
+  const fallbackStats = [
+    { value: FARM_INFO.stats.yearsInBusiness, label: 'Years in Business' },
+    { value: FARM_INFO.stats.customersCount, label: 'Happy Customers' },
+    { value: FARM_INFO.stats.dailyProduction, label: 'Daily Milk Production' },
+    { value: FARM_INFO.stats.productsCount, label: 'Dairy Products' },
+  ];
+  const aboutStats =
+    content.companyStats.length > 0
+      ? content.companyStats.slice(0, 4).map((s) => ({ value: s.value, label: s.label }))
+      : fallbackStats;
+
+  const valueIcons = [ShieldCheck, Leaf, Heart, Users];
+  const valueColors = [
+    'bg-emerald-100 text-[#0F3020]',
+    'bg-emerald-100 text-[#15803D]',
+    'bg-amber-100 text-amber-800',
+    'bg-emerald-100 text-[#0F3020]',
+  ];
+  const aboutValues =
+    content.companyValues.length > 0
+      ? content.companyValues.map((v) => ({ title: v.title, desc: v.description }))
+      : FARM_INFO.values;
+
+  const milestones =
+    content.milestones.length > 0
+      ? content.milestones.map((m) => ({
+          year: String(m.year),
+          title: m.title,
+          description: m.description,
+        }))
+      : TIMELINE_MILESTONES;
+
+  const team = content.teamItems;
+
   return (
     <div className="space-y-0">
       {/* 1. Header Hero - Compact & Balanced */}
       <section className="bg-[#0F3020] text-white py-10 sm:py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <img
-            src="https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=2000&q=80"
+            src={aboutHero?.imageUrl || "https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=2000&q=80"}
             alt="Lush green dairy pastures in Dadira"
             className="w-full h-full object-cover"
           />
@@ -41,13 +82,13 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
           className="relative max-w-4xl mx-auto text-center space-y-2.5"
         >
           <span className="font-script text-emerald-300 text-lg sm:text-xl font-bold block">
-            Our Story &amp; Agricultural Heritage
+            {aboutHero?.subtitle || 'Our Story & Agricultural Heritage'}
           </span>
           <h1 className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-            About Moo &amp; More Dairy Farm
+            {aboutHero?.title || 'About Moo & More Dairy Farm'}
           </h1>
           <p className="text-xs sm:text-sm text-stone-200 max-w-2xl mx-auto leading-relaxed">
-            Delivering the freshest dairy products with care for our animals, environment, and your health since 2023.
+            {aboutHero?.description || "Delivering the freshest dairy products with care for our animals, environment, and your health since 2023."}
           </p>
         </motion.div>
       </section>
@@ -129,61 +170,23 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
       {/* 3. Stats Strip - Animated */}
       <section className="bg-[#0F3020] text-white py-8 sm:py-10 px-4 sm:px-6 lg:px-8 border-y border-emerald-900">
         <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center">
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.yearsInBusiness}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Years in Business
-            </div>
-          </motion.div>
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.08 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.customersCount}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Happy Customers
-            </div>
-          </motion.div>
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.16 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.dailyProduction}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Daily Milk Production
-            </div>
-          </motion.div>
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.24 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.productsCount}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Dairy Products
-            </div>
-          </motion.div>
+          {aboutStats.map((stat, idx) => (
+            <motion.div 
+              key={idx}
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 15 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.08 }}
+              className="p-3 sm:p-4 rounded-xl bg-white/5"
+            >
+              <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
+                {stat.value}
+              </div>
+              <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
+                {stat.label}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -198,79 +201,34 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
           </h2>
           <div className="mt-4 p-5 sm:p-6 bg-white rounded-2xl border border-stone-200 shadow-xs max-w-2xl mx-auto">
             <p className="font-serif italic text-stone-800 text-xs sm:text-sm leading-relaxed">
-              "{FARM_INFO.mission}"
+              "{missionText}"
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            transition={{ duration: 0.35 }}
-            className="p-6 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-3"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#0F3020] flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">Quality</h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Pure, unadulterated milk collected daily under strict hygiene protocols and chilled immediately below 4°C with zero chemical additives or preservatives.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            transition={{ duration: 0.35, delay: 0.08 }}
-            className="p-6 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-3"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#15803D] flex items-center justify-center">
-              <Leaf className="w-6 h-6" />
-            </div>
-            <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">Sustainability</h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Eco-conscious pasture rotation, zero-waste organic manure recycling into lush Napier grass and fodder, and water conservation practices.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            transition={{ duration: 0.35, delay: 0.16 }}
-            className="p-6 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-3"
-          >
-            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
-              <Heart className="w-6 h-6" />
-            </div>
-            <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">Animal Welfare</h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Free-range exercise, scientifically balanced nutritional rations, continuous veterinary oversight, and gentle handling to ensure contented, thriving cattle.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            transition={{ duration: 0.35, delay: 0.24 }}
-            className="p-6 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-3"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#0F3020] flex items-center justify-center">
-              <Users className="w-6 h-6" />
-            </div>
-            <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">Community</h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Empowering local smallholders through practical training workshops, high-grade breeding genetics, fair partnerships, and local employment.
-            </p>
-          </motion.div>
+          {aboutValues.map((value, idx) => {
+            const ValueIcon = valueIcons[idx % valueIcons.length];
+            return (
+              <motion.div 
+                key={value.title}
+                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.35, delay: idx * 0.08 }}
+                className="p-6 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-3"
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${valueColors[idx % valueColors.length]}`}>
+                  <ValueIcon className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">{value.title}</h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  {value.desc}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
@@ -290,7 +248,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
           </div>
 
           <div className="space-y-8 relative before:absolute before:inset-0 before:left-8 md:before:left-1/2 before:-translate-x-px before:w-0.5 before:bg-stone-300">
-            {TIMELINE_MILESTONES.map((m, index) => {
+            {milestones.map((m, index) => {
               const isEven = index % 2 === 0;
               return (
                 <motion.div
@@ -345,7 +303,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {TEAM_MEMBERS.map((member, idx) => (
+          {team.map((member, idx) => (
             <motion.div
               key={member.id}
               whileInView={{ opacity: 1, y: 0 }}
@@ -355,16 +313,29 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate, onOpenOrder })
               transition={{ duration: 0.35, delay: idx * 0.08 }}
               className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-lg transition-all text-center"
             >
-              <div className="h-52 sm:h-60 w-full overflow-hidden relative">
-                <img
-                  src={member.image}
-                  alt={member.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <span className="absolute bottom-3 left-4 text-xs font-semibold text-white">
-                  {member.role}
-                </span>
+              <div className="h-52 sm:h-60 w-full overflow-hidden relative bg-emerald-50">
+                {member.image ? (
+                  <>
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    <span className="absolute bottom-3 left-4 text-xs font-semibold text-white">
+                      {member.role}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-full h-full flex items-center justify-center">
+                      <UserRound className="w-16 h-16 sm:w-20 sm:h-20 text-emerald-600/30" />
+                    </div>
+                    <span className="absolute bottom-3 left-4 text-xs font-semibold text-[#15803D]">
+                      {member.role}
+                    </span>
+                  </>
+                )}
               </div>
 
               <div className="p-5 space-y-2">

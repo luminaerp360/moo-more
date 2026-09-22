@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PRODUCTS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { ProductItem, NavPage, CartItem } from '../types';
 import { 
   ShoppingBag, 
@@ -24,6 +25,7 @@ interface ShopPageProps {
 }
 
 export const ShopPage: React.FC<ShopPageProps> = ({ onNavigate, onOpenOrder }) => {
+  const products = useSiteContent().productItems;
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -45,7 +47,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onNavigate, onOpenOrder }) =
     { id: 'artisan', label: 'Butter & Cream' },
   ];
 
-  const filteredProducts = PRODUCTS.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.shortDesc.toLowerCase().includes(searchQuery.toLowerCase());

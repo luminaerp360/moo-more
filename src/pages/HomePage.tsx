@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { FARM_INFO, PRODUCTS, SERVICES, BLOG_POSTS, TEAM_MEMBERS } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { NavPage } from '../types';
 import { TestimonialSection } from '../components/TestimonialSection';
 import { 
@@ -30,6 +31,46 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) => {
+  const content = useSiteContent();
+
+  // Live API content with graceful fallback to the static site copy
+  const hero = content.hero;
+  const heroTitle = hero?.title || null;
+  const heroDescription = hero?.description || null;
+  const heroImage = hero?.imageUrl || null;
+  const primaryBtnText = hero?.primaryButtonText || 'Shop With Us Now';
+  const secondaryBtnText = hero?.secondaryButtonText || 'Our Products';
+
+  const fallbackStats = [
+    { value: FARM_INFO.stats.yearsInBusiness, label: FARM_INFO.stats.yearsLabel },
+    { value: FARM_INFO.stats.customersCount, label: FARM_INFO.stats.customersLabel },
+    { value: FARM_INFO.stats.dailyProduction, label: FARM_INFO.stats.dailyProductionLabel },
+    { value: FARM_INFO.stats.productsCount, label: FARM_INFO.stats.productsLabel },
+  ];
+  const homeStats =
+    content.statsCounters.length > 0
+      ? content.statsCounters.slice(0, 4).map((s) => ({ value: `${s.value}+`, label: s.title }))
+      : fallbackStats;
+
+  const valueIcons = [ShieldCheck, Leaf, Heart, Users];
+  const valueColors = [
+    'bg-emerald-100 text-[#15803D]',
+    'bg-emerald-100 text-[#15803D]',
+    'bg-amber-100 text-amber-800',
+    'bg-emerald-100 text-[#0F3020]',
+  ];
+  const homeValues =
+    content.companyValues.length > 0
+      ? content.companyValues.map((v) => ({ title: v.title, desc: v.description }))
+      : FARM_INFO.values;
+
+  const missionText =
+    content.mission?.description || FARM_INFO.mission;
+
+  const featuredProducts = content.productItems.slice(0, 2);
+  const services = content.serviceItems;
+  const blogPosts = content.blogPosts;
+
   return (
     <div className="space-y-0">
       {/* 1. HERO SECTION - Streamlined, Balanced & Animated */}
@@ -37,7 +78,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
         {/* Background Image with Warm Pastoral Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=2000&q=80"
+            src={heroImage || "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=2000&q=80"}
             alt="Moo & More Dairy Farm Pastures in Dadira, Kenya"
             className="w-full h-full object-cover object-center filter brightness-40 contrast-105"
           />
@@ -70,8 +111,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
                 transition={{ duration: 0.45, delay: 0.15 }}
                 className="font-serif-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight"
               >
-                Welcome to <br className="hidden sm:inline" />
-                <span className="text-emerald-400">Moo &amp; More</span> Dairy Farm
+                {heroTitle ? (
+                  heroTitle
+                ) : (
+                  <>
+                    Welcome to <br className="hidden sm:inline" />
+                    <span className="text-emerald-400">Moo &amp; More</span> Dairy Farm
+                  </>
+                )}
               </motion.h1>
 
               <motion.p 
@@ -80,7 +127,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
                 transition={{ duration: 0.45, delay: 0.2 }}
                 className="text-sm sm:text-base text-stone-200 leading-relaxed max-w-xl"
               >
-                Farm-fresh milk and wholesome dairy products straight from our happy, pasture-fed cows to your family table.
+                {heroDescription || "Farm-fresh milk and wholesome dairy products straight from our happy, pasture-fed cows to your family table."}
               </motion.p>
 
               <motion.div 
@@ -96,7 +143,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
                   className="px-5 py-2.5 sm:py-3 bg-[#15803D] hover:bg-[#166534] text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-xs sm:text-sm group cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Shop With Us Now</span>
+                  <span>{primaryBtnText}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
 
@@ -106,7 +153,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
                   onClick={() => onNavigate('products')}
                   className="px-5 py-2.5 sm:py-3 bg-white/15 hover:bg-white/25 text-white font-bold border border-white/30 rounded-lg transition-all text-xs sm:text-sm backdrop-blur-xs cursor-pointer"
                 >
-                  Our Products
+                  {secondaryBtnText}
                 </motion.button>
               </motion.div>
 
@@ -195,71 +242,72 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
       {/* 2. STATS STRIP 1 - Animated on View */}
       <section className="bg-[#0F3020] text-white py-8 px-4 sm:px-6 lg:px-8 border-y border-emerald-900/60 shadow-inner">
         <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center">
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -3, scale: 1.02 }}
-            transition={{ duration: 0.3 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.yearsInBusiness}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              {FARM_INFO.stats.yearsLabel}
-            </div>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -3, scale: 1.02 }}
-            transition={{ duration: 0.3, delay: 0.05 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.customersCount}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Happy Customers Served
-            </div>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -3, scale: 1.02 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.dailyProduction}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Daily Milk Production
-            </div>
-          </motion.div>
-
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -3, scale: 1.02 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
-            className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10"
-          >
-            <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
-              {FARM_INFO.stats.productsCount}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
-              Fresh Dairy Products
-            </div>
-          </motion.div>
+          {homeStats.map((stat, idx) => (
+            <motion.div 
+              key={idx}
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 15 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -3, scale: 1.02 }}
+              transition={{ duration: 0.3, delay: idx * 0.05 }}
+              className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10"
+            >
+              <div className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-emerald-300">
+                {stat.value}
+              </div>
+              <div className="text-[11px] sm:text-xs font-semibold text-stone-200 uppercase tracking-wider mt-1">
+                {stat.label}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
+
+      {/* 2b. SPECIAL OFFERS FROM LIVE CMS */}
+      {content.specialOffers.length > 0 && (
+        <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+            <span className="font-script text-[#15803D] text-xl sm:text-2xl font-bold block mb-1">
+              Fresh From the Farm
+            </span>
+            <h2 className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-[#0F3020]">
+              Special Offers
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {content.specialOffers.map((offer) => (
+              <motion.div
+                key={offer._id || offer.title}
+                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-lg transition-all"
+              >
+                <div className="h-44 overflow-hidden">
+                  <img
+                    src={offer.imageUrl}
+                    alt={offer.title}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="p-5">
+                  <h3 className="font-serif-heading font-bold text-lg text-[#0F3020]">
+                    {offer.title}
+                  </h3>
+                  <p className="text-sm text-stone-600 mt-2 line-clamp-3">{offer.description}</p>
+                  <button
+                    onClick={() => onNavigate('shop')}
+                    className="mt-4 px-4 py-2 bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold rounded-lg transition-colors"
+                  >
+                    {offer.buttonText}
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3. ABOUT TEASER & MISSION BLOCK - Animated */}
       <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -325,7 +373,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
                 Our Farm Mission
               </h4>
               <p className="text-stone-800 text-xs sm:text-sm italic font-serif leading-relaxed">
-                "{FARM_INFO.mission}"
+                "{missionText}"
               </p>
             </div>
 
@@ -356,81 +404,30 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            <motion.div 
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6, scale: 1.01 }}
-              transition={{ duration: 0.35 }}
-              className="p-6 rounded-2xl bg-[#F4F7F4] border border-stone-200/80 space-y-3 shadow-2xs hover:shadow-md transition-shadow"
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#15803D] flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">
-                Quality
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Pure, unadulterated milk collected daily under strict hygiene protocols and chilled immediately below 4°C with zero chemical additives or preservatives.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6, scale: 1.01 }}
-              transition={{ duration: 0.35, delay: 0.08 }}
-              className="p-6 rounded-2xl bg-[#F4F7F4] border border-stone-200/80 space-y-3 shadow-2xs hover:shadow-md transition-shadow"
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#15803D] flex items-center justify-center">
-                <Leaf className="w-6 h-6" />
-              </div>
-              <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">
-                Sustainability
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Eco-conscious pasture rotation, zero-waste organic manure recycling into lush Napier grass and fodder, and water conservation practices.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6, scale: 1.01 }}
-              transition={{ duration: 0.35, delay: 0.16 }}
-              className="p-6 rounded-2xl bg-[#F4F7F4] border border-stone-200/80 space-y-3 shadow-2xs hover:shadow-md transition-shadow"
-            >
-              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
-                <Heart className="w-6 h-6" />
-              </div>
-              <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">
-                Animal Welfare
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Free-range exercise, scientifically balanced nutritional rations, continuous veterinary oversight, and gentle handling to ensure contented, thriving cattle.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6, scale: 1.01 }}
-              transition={{ duration: 0.35, delay: 0.24 }}
-              className="p-6 rounded-2xl bg-[#F4F7F4] border border-stone-200/80 space-y-3 shadow-2xs hover:shadow-md transition-shadow"
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#0F3020] flex items-center justify-center">
-                <Users className="w-6 h-6" />
-              </div>
-              <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">
-                Community
-              </h3>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Empowering local smallholders through practical training workshops, high-grade breeding genetics, fair partnerships, and local employment.
-              </p>
-            </motion.div>
+            {homeValues.map((value, idx) => {
+              const ValueIcon = valueIcons[idx % valueIcons.length];
+              return (
+                <motion.div 
+                  key={value.title}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  transition={{ duration: 0.35, delay: idx * 0.08 }}
+                  className="p-6 rounded-2xl bg-[#F4F7F4] border border-stone-200/80 space-y-3 shadow-2xs hover:shadow-md transition-shadow"
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${valueColors[idx % valueColors.length]}`}>
+                    <ValueIcon className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-serif-heading text-lg sm:text-xl font-bold text-[#0F3020]">
+                    {value.title}
+                  </h3>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    {value.desc}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -450,117 +447,59 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-          {/* Card 1: 100% Pure Fresh Cow Milk */}
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 25 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -6 }}
-            transition={{ duration: 0.4 }}
-            className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col sm:flex-row group"
-          >
-            <div className="sm:w-1/2 h-56 sm:h-auto relative overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80"
-                alt="100% Pure Fresh Cow Milk from Moo & More Farm"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <span className="absolute top-3 left-3 bg-[#15803D] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-xs">
-                Farm Best Seller
-              </span>
-            </div>
-
-            <div className="sm:w-1/2 p-6 sm:p-7 flex flex-col justify-between">
-              <div>
-                <h3 className="font-serif-heading text-xl sm:text-2xl font-bold text-[#0F3020] mb-2">
-                  100% Pure Fresh Cow Milk
-                </h3>
-                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-4">
-                  Collected every morning from our free-range herd and delivered straight to your door. No preservatives, no additives — just honest, natural milk the way it should be.
-                </p>
-                <div className="space-y-1.5 text-xs text-stone-700 mb-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Delivered in under 12 hours from milking</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Cold-chain storage below 4°C</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Available in 1L, 2L, 5L &amp; bulk cans</span>
-                  </div>
-                </div>
+          {featuredProducts.map((product, idx) => (
+            <motion.div 
+              key={product.id}
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 25 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -6 }}
+              transition={{ duration: 0.4, delay: idx * 0.1 }}
+              className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col sm:flex-row group"
+            >
+              <div className="sm:w-1/2 h-56 sm:h-auto relative overflow-hidden">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {product.badge && (
+                  <span className="absolute top-3 left-3 bg-[#15803D] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-xs">
+                    {product.badge}
+                  </span>
+                )}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenOrder('fresh-milk')}
-                className="w-full py-2.5 sm:py-3 px-4 bg-[#0F3020] hover:bg-[#0A2015] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Order Fresh Milk</span>
-              </motion.button>
-            </div>
-          </motion.div>
-
-          {/* Card 2: Handcrafted Yoghurt & Dairy */}
-          <motion.div 
-            whileInView={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 25 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -6 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col sm:flex-row group"
-          >
-            <div className="sm:w-1/2 h-56 sm:h-auto relative overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80"
-                alt="Handcrafted Yoghurt and Dairy Delights"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <span className="absolute top-3 left-3 bg-[#0F3020] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-xs">
-                Live Probiotics
-              </span>
-            </div>
-
-            <div className="sm:w-1/2 p-6 sm:p-7 flex flex-col justify-between">
-              <div>
-                <h3 className="font-serif-heading text-xl sm:text-2xl font-bold text-[#0F3020] mb-2">
-                  Handcrafted Yoghurt &amp; Dairy
-                </h3>
-                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-4">
-                  Our yoghurt is made in small batches from fresh farm milk using live cultures. Available in strawberry, vanilla, plain, and maziwa mala — naturally rich, creamy, and delicious.
-                </p>
-                <div className="space-y-1.5 text-xs text-stone-700 mb-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Active gut-friendly probiotic strains</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Real fruit purees &amp; moderate sweetness</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Traditional slow fermented Maziwa Mala</span>
+              <div className="sm:w-1/2 p-6 sm:p-7 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-serif-heading text-xl sm:text-2xl font-bold text-[#0F3020] mb-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-4">
+                    {product.fullDesc || product.shortDesc}
+                  </p>
+                  <div className="space-y-1.5 text-xs text-stone-700 mb-6">
+                    {(product.features || []).slice(0, 3).map((feature, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="line-clamp-1">{feature}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenOrder('handcrafted-yoghurt')}
-                className="w-full py-2.5 sm:py-3 px-4 bg-[#15803D] hover:bg-[#166534] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Explore Products</span>
-              </motion.button>
-            </div>
-          </motion.div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onOpenOrder(product.id)}
+                  className="w-full py-2.5 sm:py-3 px-4 bg-[#0F3020] hover:bg-[#0A2015] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>{product.priceNote || 'Order Now'}</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -644,7 +583,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          {SERVICES.map((srv, idx) => (
+          {services.map((srv, idx) => (
             <motion.div
               key={srv.id}
               whileInView={{ opacity: 1, y: 0 }}
@@ -839,7 +778,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {BLOG_POSTS.map((post, idx) => (
+          {blogPosts.map((post, idx) => (
             <motion.div
               key={post.id}
               whileInView={{ opacity: 1, y: 0 }}
@@ -884,6 +823,46 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) =
           ))}
         </div>
       </section>
+
+      {/* 10b. NEWSLETTER FROM LIVE CMS */}
+      {content.newsletter && (
+        <section className="py-12 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="max-w-3xl mx-auto bg-[#0F3020] rounded-3xl p-8 sm:p-12 text-center text-white border border-emerald-900/50">
+            <h2 className="font-serif-heading text-2xl sm:text-3xl font-bold">
+              {content.newsletter.title}
+            </h2>
+            <p className="text-sm text-stone-300 mt-3 leading-relaxed max-w-xl mx-auto">
+              {content.newsletter.description}
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                window.open(
+                  `https://wa.me/254711320959?text=${encodeURIComponent(
+                    'Hello! I would like to subscribe to the Moo & More newsletter.'
+                  )}`,
+                  '_blank',
+                  'noopener,noreferrer'
+                );
+              }}
+              className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            >
+              <input
+                type="email"
+                required
+                placeholder={content.newsletter.placeholderText}
+                className="flex-1 px-4 py-3 rounded-lg text-sm text-stone-900 bg-white border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+              <button
+                type="submit"
+                className="px-5 py-3 bg-[#15803D] hover:bg-[#166534] text-white text-sm font-bold rounded-lg transition-colors"
+              >
+                {content.newsletter.buttonText}
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
 
       {/* 11. CONTACT STRIP BEFORE FOOTER - Animated */}
       <section className="bg-white border-t border-stone-200/80 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">

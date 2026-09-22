@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { PRODUCTS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { ProductItem, NavPage } from '../types';
 import { 
   CheckCircle2, 
@@ -22,11 +23,12 @@ interface ProductsPageProps {
 }
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onOpenOrder }) => {
+  const products = useSiteContent().productItems;
   const [activeTab, setActiveTab] = useState<'all' | 'milk' | 'yoghurt' | 'mala' | 'feed' | 'artisan'>('all');
 
   const filtered = activeTab === 'all' 
-    ? PRODUCTS 
-    : PRODUCTS.filter(p => p.category === activeTab);
+    ? products 
+    : products.filter(p => p.category === activeTab);
 
   // Nutritional & Quality Specs for Products
   const productSpecs: Record<string, { fat: string; protein: string; shelfLife: string; storage: string }> = {

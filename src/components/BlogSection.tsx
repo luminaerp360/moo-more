@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BLOG_POSTS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { BlogPost, NavPage } from '../types';
 import { 
   Calendar, 
@@ -27,6 +28,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 }) => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [copied, setCopied] = useState(false);
+  const blogPosts = useSiteContent().blogPosts;
 
   const handleShare = (post: BlogPost) => {
     if (navigator.share) {
@@ -169,7 +171,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
       ) : (
         /* Blog Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {BLOG_POSTS.map((post) => (
+          {blogPosts.map((post) => (
             <article
               key={post.id}
               className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"

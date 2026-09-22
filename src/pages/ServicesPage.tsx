@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { SERVICES, PRODUCTS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { NavPage } from '../types';
 import { 
   CheckCircle2, 
@@ -19,6 +20,10 @@ interface ServicesPageProps {
 }
 
 export const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate, onOpenOrder }) => {
+  const content = useSiteContent();
+  const services = content.serviceItems;
+  const products = content.productItems;
+
   return (
     <div className="space-y-0">
       {/* 1. Hero Header - Compact & Balanced */}
@@ -84,7 +89,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate, onOpenOr
         </div>
 
         <div className="space-y-8 sm:space-y-12">
-          {SERVICES.map((srv, index) => {
+          {services.map((srv, index) => {
             const isReversed = index % 2 !== 0;
             return (
               <motion.div
@@ -216,7 +221,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onNavigate, onOpenOr
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            {PRODUCTS.map((prod, idx) => (
+            {products.map((prod, idx) => (
               <motion.div
                 key={prod.id}
                 whileInView={{ opacity: 1, y: 0 }}

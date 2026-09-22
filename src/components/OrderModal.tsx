@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PRODUCTS, FARM_INFO } from '../data/farmData';
+import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { X, ShoppingBag, Send, Phone, CheckCircle2, MapPin } from 'lucide-react';
 
 interface OrderModalProps {
@@ -13,7 +14,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onClose,
   preselectedProductId
 }) => {
-  const [selectedProduct, setSelectedProduct] = useState(preselectedProductId || PRODUCTS[0].id);
+  const products = useSiteContent().productItems;
+  const [selectedProduct, setSelectedProduct] = useState(preselectedProductId || products[0]?.id || '');
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState('');
@@ -25,7 +27,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentProduct = PRODUCTS.find(p => p.id === selectedProduct) || PRODUCTS[0];
+  const currentProduct = products.find(p => p.id === selectedProduct) || products[0];
+
+  if (!currentProduct) return null;
 
   const handleWhatsAppOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +115,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 1. Select Product
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PRODUCTS.map(product => (
+                {products.map(product => (
                   <button
                     key={product.id}
                     type="button"
