@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { FARM_INFO } from '../data/farmData';
 import { useSiteContent } from '../context/ContentContext';
 import { ProductItem, NavPage } from '../types';
+import { useCart, calculateItemPrice } from '../context/CartContext';
 import { 
   CheckCircle2, 
   ShoppingBag, 
@@ -14,7 +15,8 @@ import {
   Award,
   ArrowRight,
   Info,
-  ChevronDown
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 interface ProductsPageProps {
@@ -24,7 +26,36 @@ interface ProductsPageProps {
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onOpenOrder }) => {
   const products = useSiteContent().productItems;
+  const { addToCart, openCart, openCheckout } = useCart();
   const [activeTab, setActiveTab] = useState<'all' | 'milk' | 'yoghurt' | 'mala' | 'feed' | 'artisan'>('all');
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
+  const [addedSuccess, setAddedSuccess] = useState<Record<string, boolean>>({});
+
+  const getProductSelectedSize = (prod: ProductItem) => {
+    return selectedSizes[prod.id] || prod.sizes[0] || '1 Litre';
+  };
+
+  const handleSelectSize = (productId: string, size: string) => {
+    setSelectedSizes(prev => ({ ...prev, [productId]: size }));
+  };
+
+  const handleAddToCart = (product: ProductItem) => {
+    const size = getProductSelectedSize(product);
+    addToCart(product, size, 1);
+    setAddedSuccess(prev => ({ ...prev, [product.id]: true }));
+    setTimeout(() => {
+      setAddedSuccess(prev => ({ ...prev, [product.id]: false }));
+    }, 2200);
+  };
+
+  const handleBuyNow = (product: ProductItem) => {
+    const size = getProductSelectedSize(product);
+    openCheckout({
+      product,
+      selectedSize: size,
+      quantity: 1,
+    });
+  };
 
   const filtered = activeTab === 'all' 
     ? products 
@@ -151,108 +182,145 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onOpenOr
                 </div>
 
                 {/* Right: Detailed Information */}
-                <div className="lg:col-span-7 p-6 sm:p-8 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[11px] uppercase font-bold tracking-wider text-[#15803D] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60">
-                      {product.category}
-                    </span>
-                    {product.price && (
-                      <span className="text-lg font-black text-[#0F3020]">
-                        {product.priceNote || `KSh ${product.price.toLocaleString()}`}
-                      </span>
-                    )}
-                  </div>
+                {(() => {
+                  const currentSize = getProductSelectedSize(product);
+                  const currentPrice = calculateItemPrice(product, currentSize);
+                  const isAdded = Boolean(addedSuccess[product.id]);
 
-                  <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold text-[#0F3020]">
-                    {product.name}
-                  </h3>
-
-                  <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
-                    {product.fullDesc}
-                  </p>
-
-                  {/* Quality & Nutritional Matrix */}
-                  {specs && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs">
-                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                        <span className="text-[10px] text-stone-500 uppercase block font-semibold">Butterfat / Extract</span>
-                        <span className="font-bold text-stone-900 text-xs">{specs.fat}</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                        <span className="text-[10px] text-stone-500 uppercase block font-semibold">Crude Protein</span>
-                        <span className="font-bold text-stone-900 text-xs">{specs.protein}</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                        <span className="text-[10px] text-stone-500 uppercase block font-semibold">Freshness Life</span>
-                        <span className="font-bold text-stone-900 text-xs">{specs.shelfLife}</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
-                        <span className="text-[10px] text-stone-500 uppercase block font-semibold">Storage Rule</span>
-                        <span className="font-bold text-stone-900 text-xs truncate" title={specs.storage}>{specs.storage}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Available Sizes Matrix */}
-                  <div>
-                    <span className="text-xs font-bold text-stone-900 block mb-1.5">
-                      Available Package Configurations:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {product.sizes.map((sz, sIdx) => (
-                        <span
-                          key={sIdx}
-                          className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-700 text-xs font-medium border border-stone-200"
-                        >
-                          {sz}
+                  return (
+                    <div className="lg:col-span-7 p-6 sm:p-8 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] uppercase font-bold tracking-wider text-[#15803D] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60">
+                          {product.category}
                         </span>
-                      ))}
+                        <div className="text-right">
+                          <span className="text-2xl font-black text-[#0F3020]">
+                            KSh {currentPrice.toLocaleString()}
+                          </span>
+                          <span className="block text-[11px] text-stone-500 font-medium">
+                            per {currentSize}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold text-[#0F3020]">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+                        {product.fullDesc}
+                      </p>
+
+                      {/* Quality & Nutritional Matrix */}
+                      {specs && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs">
+                          <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                            <span className="text-[10px] text-stone-500 uppercase block font-semibold">Butterfat / Extract</span>
+                            <span className="font-bold text-stone-900 text-xs">{specs.fat}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                            <span className="text-[10px] text-stone-500 uppercase block font-semibold">Crude Protein</span>
+                            <span className="font-bold text-stone-900 text-xs">{specs.protein}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                            <span className="text-[10px] text-stone-500 uppercase block font-semibold">Freshness Life</span>
+                            <span className="font-bold text-stone-900 text-xs">{specs.shelfLife}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                            <span className="text-[10px] text-stone-500 uppercase block font-semibold">Storage Rule</span>
+                            <span className="font-bold text-stone-900 text-xs truncate" title={specs.storage}>{specs.storage}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Interactive Size Selector */}
+                      <div className="pt-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-stone-900">
+                            Select Packaging Size:
+                          </span>
+                          <span className="text-[11px] text-[#15803D] font-semibold">
+                            {currentSize}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {product.sizes.map((sz, sIdx) => {
+                            const isSelected = currentSize === sz;
+                            return (
+                              <button
+                                key={sIdx}
+                                type="button"
+                                onClick={() => handleSelectSize(product.id, sz)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                  isSelected
+                                    ? 'bg-[#0F3020] text-white border-[#0F3020] shadow-2xs ring-1 ring-[#0F3020]'
+                                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:border-emerald-600 hover:bg-stone-100'
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Feature Checkpoints */}
+                      <div className="pt-2 border-t border-stone-100">
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-600">
+                          {product.features.map((feat, fIdx) => (
+                            <li key={fIdx} className="flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>{feat}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* eCommerce Actions: Buy Now & Add to Basket */}
+                      <div className="pt-4 flex flex-wrap items-center gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleBuyNow(product)}
+                          className="px-5 py-2.5 bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Buy Now • KSh {currentPrice.toLocaleString()}</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleAddToCart(product)}
+                          className={`px-4 py-2.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isAdded
+                              ? 'bg-emerald-50 text-[#15803D] border-[#15803D]'
+                              : 'bg-white hover:bg-stone-50 text-[#0F3020] border-stone-300'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-[#15803D]" />
+                              <span>Added to Basket!</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="w-3.5 h-3.5" />
+                              <span>Add to Basket</span>
+                            </>
+                          )}
+                        </motion.button>
+
+                        <button
+                          onClick={() => onOpenOrder(product.id)}
+                          className="text-xs font-semibold text-stone-500 hover:text-[#15803D] hover:underline cursor-pointer ml-auto"
+                        >
+                          Commercial / Bulk Inquiry
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Feature Checkpoints */}
-                  <div className="pt-2 border-t border-stone-100">
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-600">
-                      {product.features.map((feat, fIdx) => (
-                        <li key={fIdx} className="flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* CTA Actions */}
-                  <div className="pt-4 flex flex-wrap items-center gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => onOpenOrder(product.id)}
-                      className="px-5 py-2.5 bg-[#0F3020] hover:bg-[#15803D] text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Order This Product</span>
-                    </motion.button>
-
-                    <button
-                      onClick={() => onNavigate('shop')}
-                      className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-[#0F3020] text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                    >
-                      Add to Shop Cart
-                    </button>
-
-                    <a
-                      href={`https://wa.me/254711320959?text=Hello%20Moo%20%26%20More%20Farm,%20I%20have%20an%20inquiry%20regarding%20${encodeURIComponent(product.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      <span>Wholesale Quote via WhatsApp</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </a>
-                  </div>
-
-                </div>
+                  );
+                })()}
               </div>
             </motion.div>
           );

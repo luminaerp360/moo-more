@@ -190,7 +190,22 @@ export const categoriesApi = {
 // ---------------------------------------------------------------------------
 // Orders  (/orders)
 // ---------------------------------------------------------------------------
+export interface CreateOrderPayload {
+  items: {
+    productId: string;
+    quantity: number;
+    price: number;
+    notes?: string;
+    pricingTier?: string;
+  }[];
+  customerType?: string;
+  businessName?: string;
+  shippingAddress: string;
+  paymentMethod: string;
+}
+
 export const ordersApi = {
+  create: (data: CreateOrderPayload) => api.post<OrderRecord>('/orders', data),
   getAll: () => api.get<OrderRecord[]>('/orders'),
   updateStatus: (id: string, status: string) =>
     api.put<OrderRecord>(`/orders/${id}/status`, { status }),

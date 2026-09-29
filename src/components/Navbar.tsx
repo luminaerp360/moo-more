@@ -4,6 +4,7 @@ import { NavPage } from '../types';
 import { FARM_INFO } from '../data/farmData';
 import { useAuth } from '../context/AuthContext';
 import { useSiteContent } from '../context/ContentContext';
+import { useCart } from '../context/CartContext';
 import { BrandLogo } from './BrandLogo';
 import { 
   Phone, 
@@ -35,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [scrolled, setScrolled] = useState(false);
   const { isAdmin, isAuthenticated, logout } = useAuth();
   const { settings } = useSiteContent();
+  const { cartCount, openCart } = useCart();
 
   const phone = settings?.generalSettings?.phone || settings?.general?.supportPhone || FARM_INFO.phone;
   const phoneRaw = phone.replace(/[^\d+]/g, '');
@@ -174,13 +176,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          {/* Desktop Actions - Streamlined */}
+          {/* Desktop Actions - Streamlined eCommerce Header */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
+            {/* Cart Trigger with live count badge */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={openCart}
+              className="relative p-2 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+              title={`View Basket (${cartCount} items)`}
+              aria-label={`View Basket (${cartCount} items)`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#15803D] text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs"
+                >
+                  {cartCount}
+                </motion.span>
+              )}
+            </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={onOpenOrder}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#15803D] hover:bg-[#166534] rounded-lg transition-all shadow-xs hover:shadow"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#15803D] hover:bg-[#166534] rounded-lg transition-all shadow-xs hover:shadow cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Order Milk</span>
@@ -189,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => handleNavClick('booking')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0F3020] border border-[#0F3020]/25 hover:border-[#0F3020] hover:bg-[#0F3020]/5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0F3020] border border-[#0F3020]/25 hover:border-[#0F3020] hover:bg-[#0F3020]/5 rounded-lg transition-colors cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5 text-[#15803D]" />
               <span>Book Tour</span>
@@ -199,7 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleNavClick('login')}
-                className="p-2 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors"
+                className="p-2 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                 title="Admin Login"
                 aria-label="Admin Login"
               >
@@ -212,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleNavClick('admin')}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#0F3020] hover:bg-[#0A2216] rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#0F3020] hover:bg-[#0A2216] rounded-lg transition-colors cursor-pointer"
                     title="Admin Dashboard"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -223,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
-                  className="p-2 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                   title="Logout"
                   aria-label="Logout"
                 >
@@ -234,11 +257,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Menu & Quick Order Trigger */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-1.5 lg:hidden">
+            {/* Mobile Cart Trigger */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={openCart}
+              className="relative p-1.5 text-[#0F3020] hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+              title="View Cart"
+              aria-label="View Cart"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-[#15803D] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </motion.button>
+
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={onOpenOrder}
-              className="px-3 py-1 text-xs font-bold text-white bg-[#15803D] hover:bg-[#166534] rounded-md transition-colors flex items-center gap-1.5 shadow-xs"
+              className="px-2.5 py-1 text-xs font-bold text-white bg-[#15803D] hover:bg-[#166534] rounded-md transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
             >
               <ShoppingBag className="w-3 h-3" />
               <span>Order</span>
@@ -246,7 +285,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isAuthenticated ? (
               <button
                 onClick={() => handleNavClick('login')}
-                className="p-1.5 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors"
+                className="p-1.5 text-[#0F3020] hover:text-[#15803D] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                 aria-label="Admin Login"
                 title="Admin Login"
               >
@@ -255,7 +294,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={handleLogout}
-                className="p-1.5 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1.5 text-[#0F3020] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                 aria-label="Logout"
                 title="Logout"
               >
@@ -264,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-[#0F3020] hover:bg-stone-100 rounded-lg focus:outline-none"
+              className="p-1.5 text-[#0F3020] hover:bg-stone-100 rounded-lg focus:outline-none cursor-pointer"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

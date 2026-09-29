@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { OrderModal } from './components/OrderModal';
+import { CartDrawer } from './components/CartDrawer';
 import { LegalModal } from './components/LegalModals';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { HomePage } from './pages/HomePage';
@@ -263,6 +264,9 @@ export default function App() {
       />
 
       <FloatingWhatsApp />
+
+      {/* Slide-over eCommerce Cart Drawer */}
+      <CartDrawer />
 
       {/* Interactive Order Milk / Product Modal */}
       <OrderModal
