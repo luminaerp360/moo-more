@@ -370,13 +370,67 @@ export interface SocialStoreSettings {
   twitter?: string;
 }
 
+export interface PaymentStoreSettings {
+  enabled?: boolean;
+  provider?: string;
+  displayText?: string;
+  apiKey?: string;
+  accountReferencePrefix?: string;
+}
+
+export interface PaymentMethodConfig {
+  method: 'mpesa_till' | 'mpesa_paybill' | 'cash' | 'bank';
+  tillNumber: string;
+  paybillNumber: string;
+  accountNumber: string;
+  businessName: string;
+  instructions: string;
+  allowCashOnDelivery: boolean;
+}
+
+export function parsePaymentConfig(settings?: StoreSettings | null): PaymentMethodConfig {
+  const defaultPayment: PaymentMethodConfig = {
+    method: 'mpesa_till',
+    tillNumber: '5424564',
+    paybillNumber: '',
+    accountNumber: '',
+    businessName: 'Moo & More Dairy Farm',
+    instructions: 'Pay via Lipa na M-Pesa Buy Goods Till 5424564 or Cash upon delivery / pickup.',
+    allowCashOnDelivery: true,
+  };
+
+  if (!settings?.payment) return defaultPayment;
+
+  const p = settings.payment;
+  if (p.displayText) {
+    try {
+      const parsed = JSON.parse(p.displayText);
+      return {
+        ...defaultPayment,
+        ...parsed,
+        tillNumber: parsed.tillNumber || defaultPayment.tillNumber,
+        instructions: parsed.instructions || defaultPayment.instructions,
+      };
+    } catch {
+      return {
+        ...defaultPayment,
+        instructions: p.displayText || defaultPayment.instructions,
+      };
+    }
+  }
+
+  return defaultPayment;
+}
+
 export interface StoreSettings {
   _id?: string;
   tenantId?: string;
   general?: GeneralStoreSettings;
   social?: SocialStoreSettings;
+  payment?: PaymentStoreSettings;
   generalSettings?: GeneralStoreSettings;
   socialSettings?: SocialStoreSettings;
+  paymentSettings?: PaymentStoreSettings;
 }
 
 export interface ReviewRecord {

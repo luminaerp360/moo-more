@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useSiteContent } from '../context/ContentContext';
 import { ordersApi } from '../services/cms';
 import { FARM_INFO } from '../data/farmData';
+import { parsePaymentConfig } from '../types';
 import {
   X,
   ShoppingBag,
@@ -45,6 +46,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   } = useCart();
 
   const { productItems, settings } = useSiteContent();
+  const paymentConfig = parsePaymentConfig(settings);
 
   const isModalOpen = Boolean(propIsOpen || isCheckoutOpen);
   const handleClose = () => {
@@ -145,6 +147,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         )
         .join('\n');
 
+      const paymentSummaryLine =
+        paymentConfig.method === 'mpesa_till'
+          ? `Lipa na M-Pesa Buy Goods Till: ${paymentConfig.tillNumber}${
+              paymentConfig.businessName ? ` (${paymentConfig.businessName})` : ''
+            }`
+          : paymentConfig.method === 'mpesa_paybill'
+          ? `M-Pesa Paybill: ${paymentConfig.paybillNumber} (Account: ${
+              paymentConfig.accountNumber || customerName.trim()
+            })`
+          : paymentConfig.method === 'bank'
+          ? `Bank Transfer (${paymentConfig.businessName})`
+          : 'Cash on Delivery / Farm Pickup';
+
       const whatsappMessage = `🥛 *NEW ORDER - MOO & MORE DAIRY FARM*
 ━━━━━━━━━━━━━━━━━━━━━━
 *Order ID:* ${refFormatted}
@@ -158,8 +173,8 @@ ${customerType === 'business' && businessName ? `*Business:* ${businessName.trim
 ${itemsListText}
 
 *TOTAL AMOUNT:* KSh ${grandTotal.toLocaleString()}
-*PAYMENT:* Lipa na M-Pesa Till: 5424564 / Cash
-━━━━━━━━━━━━━━━━━━━━━━
+*PAYMENT METHOD:* ${paymentSummaryLine}
+${paymentConfig.instructions ? `*PAYMENT GUIDE:* ${paymentConfig.instructions}\n` : ''}━━━━━━━━━━━━━━━━━━━━━━
 Hello Moo & More Farm, I have placed my order via your website. Kindly confirm packaging and fulfillment. Thank you!`;
 
       const rawWhatsapp =
@@ -332,17 +347,36 @@ Hello Moo & More Farm, I have placed my order via your website. Kindly confirm p
               </div>
 
               {/* Payment Instructions Card */}
-              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-1.5">
-                <div className="font-bold text-amber-900 flex items-center gap-1.5">
-                  <span>Payment Instructions:</span>
+              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-2">
+                <div className="font-bold text-amber-900 flex items-center justify-between">
+                  <span>How to Pay for Your Order:</span>
+                  {paymentConfig.businessName && (
+                    <span className="text-[11px] text-emerald-800 font-semibold bg-emerald-100 px-2 py-0.5 rounded-md">
+                      {paymentConfig.businessName}
+                    </span>
+                  )}
                 </div>
-                <p className="text-amber-800 text-[11px]">
-                  Pay upon receiving your fresh dairy via Lipa na M-Pesa:
-                </p>
-                <div className="bg-white p-2.5 rounded-lg border border-amber-300 font-mono text-xs font-bold text-stone-800 flex items-center justify-between">
-                  <span>Buy Goods Till Number:</span>
-                  <span className="text-emerald-700 font-black text-sm">5424564</span>
-                </div>
+                {paymentConfig.instructions && (
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    {paymentConfig.instructions}
+                  </p>
+                )}
+                {paymentConfig.method === 'mpesa_till' && paymentConfig.tillNumber && (
+                  <div className="bg-white p-2.5 rounded-lg border border-amber-300 font-mono text-xs font-bold text-stone-800 flex items-center justify-between">
+                    <span>Lipa na M-Pesa Buy Goods Till:</span>
+                    <span className="text-emerald-700 font-black text-sm">
+                      {paymentConfig.tillNumber}
+                    </span>
+                  </div>
+                )}
+                {paymentConfig.method === 'mpesa_paybill' && paymentConfig.paybillNumber && (
+                  <div className="bg-white p-2.5 rounded-lg border border-amber-300 font-mono text-xs font-bold text-stone-800 flex items-center justify-between">
+                    <span>M-Pesa Paybill Number:</span>
+                    <span className="text-emerald-700 font-black text-sm">
+                      {paymentConfig.paybillNumber} (Acc: {paymentConfig.accountNumber || placedOrder.customerName})
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Post-order Action Buttons */}
@@ -542,7 +576,29 @@ Hello Moo & More Farm, I have placed my order via your website. Kindly confirm p
                       dispatch.
                     </p>
                     <div className="pt-1 text-[11px] font-semibold text-emerald-900">
-                      💳 Pay on delivery/pickup via M-Pesa Till: <strong>5424564</strong> or Cash.
+                      {paymentConfig.method === 'mpesa_till' && (
+                        <span>
+                          💳 Pay via Lipa na M-Pesa Till: <strong>{paymentConfig.tillNumber}</strong>
+                          {paymentConfig.businessName && ` (${paymentConfig.businessName})`}
+                          {paymentConfig.acceptCash ? ' or Cash on delivery/pickup.' : '.'}
+                        </span>
+                      )}
+                      {paymentConfig.method === 'mpesa_paybill' && (
+                        <span>
+                          💳 Pay via M-Pesa Paybill: <strong>{paymentConfig.paybillNumber}</strong>
+                          {` (Acc: ${paymentConfig.accountNumber || 'Your Name'})`}
+                          {paymentConfig.acceptCash ? ' or Cash.' : '.'}
+                        </span>
+                      )}
+                      {paymentConfig.method === 'cash' && (
+                        <span>💵 Pay Cash on Delivery / Farm Pickup.</span>
+                      )}
+                      {paymentConfig.method === 'bank' && (
+                        <span>
+                          🏦 Pay via Bank Transfer
+                          {paymentConfig.businessName && ` (${paymentConfig.businessName})`}.
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -636,7 +692,15 @@ Hello Moo & More Farm, I have placed my order via your website. Kindly confirm p
                       </div>
                       <div className="flex justify-between text-[#15803D] font-semibold text-[11px]">
                         <span>Payment Terms:</span>
-                        <span>Pay on Delivery / Till 5424564</span>
+                        <span>
+                          {paymentConfig.method === 'mpesa_till'
+                            ? `M-Pesa Till ${paymentConfig.tillNumber}`
+                            : paymentConfig.method === 'mpesa_paybill'
+                            ? `Paybill ${paymentConfig.paybillNumber}`
+                            : paymentConfig.method === 'bank'
+                            ? 'Bank Transfer'
+                            : 'Cash on Delivery'}
+                        </span>
                       </div>
                     </div>
 

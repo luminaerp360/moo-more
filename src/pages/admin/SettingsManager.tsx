@@ -11,8 +11,11 @@ import {
   MessageCircle,
   RefreshCw,
   Sparkles,
+  CreditCard,
+  Wallet,
+  CheckCircle2,
 } from 'lucide-react';
-import { StoreSettings, GeneralStoreSettings, SocialStoreSettings } from '../../types';
+import { StoreSettings, GeneralStoreSettings, SocialStoreSettings, PaymentMethodConfig, parsePaymentConfig } from '../../types';
 import { settingsApi } from '../../services/cms';
 import { useSiteContent } from '../../context/ContentContext';
 import {
@@ -52,6 +55,16 @@ export const SettingsManager: React.FC = () => {
     twitter: 'https://twitter.com/moomoredairy',
   });
 
+  const [paymentConfig, setPaymentConfig] = useState<PaymentMethodConfig>({
+    method: 'mpesa_till',
+    tillNumber: '5424564',
+    paybillNumber: '',
+    accountNumber: '',
+    businessName: 'Moo & More Dairy Farm',
+    instructions: 'Go to M-Pesa > Lipa na M-Pesa > Buy Goods and Services > Enter Till 5424564. Pay upon receiving your fresh dairy.',
+    allowCashOnDelivery: true,
+  });
+
   const notify = (message: string, type: 'success' | 'error' = 'success') => {
     setToast(message);
     setToastType(type);
@@ -89,6 +102,8 @@ export const SettingsManager: React.FC = () => {
             twitter: s.twitter || prev.twitter,
           }));
         }
+        const parsedPay = parsePaymentConfig(data);
+        setPaymentConfig(parsedPay);
       }
     } catch (err) {
       console.error('Failed to load store settings:', err);
@@ -122,10 +137,23 @@ export const SettingsManager: React.FC = () => {
           instagram: social.instagram,
           twitter: social.twitter,
         },
+        payment: {
+          enabled: true,
+          provider:
+            paymentConfig.method === 'mpesa_till' || paymentConfig.method === 'mpesa_paybill'
+              ? 'MPESA'
+              : 'CASH',
+          displayText: JSON.stringify(paymentConfig),
+        },
         generalSettings: general,
         socialSettings: social,
+        paymentSettings: {
+          enabled: true,
+          provider: 'MPESA',
+          displayText: JSON.stringify(paymentConfig),
+        },
       });
-      notify('Farm settings saved successfully!');
+      notify('Farm settings and payment instructions saved successfully!');
       // Refresh global site content context so changes reflect immediately across the app
       if (typeof refetchContent === 'function') {
         await refetchContent();
@@ -138,6 +166,11 @@ export const SettingsManager: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const updatePayment = (field: keyof PaymentMethodConfig, val: any) => {
+    const value = typeof val === 'object' && val !== null && 'target' in val ? val.target.value : val;
+    setPaymentConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateGeneral = (field: keyof GeneralStoreSettings, val: any) => {
@@ -330,6 +363,156 @@ export const SettingsManager: React.FC = () => {
                   placeholder="https://twitter.com/moomoredairy"
                 />
               </Field>
+            </div>
+          </Card>
+
+          {/* Payment Methods & Customer Payment Instructions Card */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2.5 pb-4 border-b border-stone-200 mb-5">
+              <div className="p-2 rounded-lg bg-emerald-50 text-[#15803D]">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#0F3020]">Payment Methods &amp; Customer Instructions</h3>
+                <p className="text-xs text-stone-500">
+                  Configure payment details (M-Pesa Till, Paybill, or Cash). These instructions are displayed on checkout and sent in the WhatsApp confirmation message.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {/* Payment Method Selector */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-2">
+                  Primary Payment Type:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'mpesa_till', label: 'Lipa na M-Pesa Till' },
+                    { id: 'mpesa_paybill', label: 'M-Pesa Paybill' },
+                    { id: 'cash', label: 'Cash on Delivery / Pickup' },
+                    { id: 'bank', label: 'Bank Transfer' },
+                  ].map((method) => {
+                    const isSelected = paymentConfig.method === method.id;
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => updatePayment('method', method.id)}
+                        className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                          isSelected
+                            ? 'bg-[#0F3020] text-white border-[#0F3020] shadow-xs'
+                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        {method.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* M-Pesa Till Details */}
+              {paymentConfig.method === 'mpesa_till' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <Field label="M-Pesa Buy Goods Till Number" required>
+                    <TextInput
+                      value={paymentConfig.tillNumber || ''}
+                      onChange={(e) => updatePayment('tillNumber', e.target.value)}
+                      placeholder="e.g. 5424564"
+                    />
+                  </Field>
+
+                  <Field label="Registered Till / Business Name">
+                    <TextInput
+                      value={paymentConfig.businessName || ''}
+                      onChange={(e) => updatePayment('businessName', e.target.value)}
+                      placeholder="e.g. Moo & More Dairy Farm"
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {/* M-Pesa Paybill Details */}
+              {paymentConfig.method === 'mpesa_paybill' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <Field label="Paybill Business Number" required>
+                    <TextInput
+                      value={paymentConfig.paybillNumber || ''}
+                      onChange={(e) => updatePayment('paybillNumber', e.target.value)}
+                      placeholder="e.g. 247247"
+                    />
+                  </Field>
+
+                  <Field label="Account Number / Rule">
+                    <TextInput
+                      value={paymentConfig.accountNumber || ''}
+                      onChange={(e) => updatePayment('accountNumber', e.target.value)}
+                      placeholder="e.g. Customer Name or Phone Number"
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {/* Custom Instructions */}
+              <div>
+                <Field label="Payment Instructions & Guide for Customers">
+                  <TextArea
+                    value={paymentConfig.instructions || ''}
+                    onChange={(e) => updatePayment('instructions', e.target.value)}
+                    rows={3}
+                    placeholder="e.g. Go to M-Pesa > Lipa na M-Pesa > Buy Goods and Services > Enter Till 5424564. Pay upon receiving your fresh dairy."
+                  />
+                </Field>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  This text will appear in the checkout modal, on the order confirmation screen, and inside the WhatsApp order message.
+                </p>
+              </div>
+
+              {/* Cash on Delivery Toggle */}
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="allowCashOnDelivery"
+                  checked={paymentConfig.allowCashOnDelivery !== false}
+                  onChange={(e) => updatePayment('allowCashOnDelivery', e.target.checked)}
+                  className="rounded text-[#15803D] focus:ring-[#15803D] w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="allowCashOnDelivery" className="text-xs font-semibold text-stone-700 cursor-pointer">
+                  Allow cash on delivery / farm pickup as an alternative payment option
+                </label>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-xs space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">
+                  Customer Checkout Preview:
+                </span>
+                <div className="p-3 bg-white rounded-lg border border-amber-200 bg-amber-50/60 space-y-1">
+                  <div className="font-bold text-amber-900 flex items-center justify-between">
+                    <span>
+                      {paymentConfig.method === 'mpesa_till'
+                        ? 'Lipa na M-Pesa Buy Goods Till'
+                        : paymentConfig.method === 'mpesa_paybill'
+                        ? 'M-Pesa Paybill'
+                        : 'Payment'}
+                    </span>
+                    {paymentConfig.method === 'mpesa_till' && paymentConfig.tillNumber && (
+                      <span className="font-mono text-sm font-black text-emerald-700">
+                        Till: {paymentConfig.tillNumber}
+                      </span>
+                    )}
+                    {paymentConfig.method === 'mpesa_paybill' && paymentConfig.paybillNumber && (
+                      <span className="font-mono text-sm font-black text-emerald-700">
+                        Paybill: {paymentConfig.paybillNumber}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-amber-800">
+                    {paymentConfig.instructions || 'Pay upon receiving your fresh dairy.'}
+                  </p>
+                </div>
+              </div>
             </div>
           </Card>
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../context/CartContext';
+import { useSiteContent } from '../context/ContentContext';
+import { parsePaymentConfig } from '../types';
 import {
   ShoppingBag,
   X,
@@ -24,6 +26,18 @@ export const CartDrawer: React.FC = () => {
     updateQuantity,
     removeFromCart,
   } = useCart();
+
+  const { settings } = useSiteContent();
+  const paymentConfig = parsePaymentConfig(settings);
+
+  const paymentLabel =
+    paymentConfig.method === 'mpesa_till'
+      ? `M-Pesa Till ${paymentConfig.tillNumber}`
+      : paymentConfig.method === 'mpesa_paybill'
+      ? `Paybill ${paymentConfig.paybillNumber}`
+      : paymentConfig.method === 'bank'
+      ? 'Bank Transfer'
+      : 'Cash on Delivery';
 
   const freeDeliveryThreshold = 2500;
   const progressPercent = Math.min(100, Math.round((cartSubtotal / freeDeliveryThreshold) * 100));
@@ -212,7 +226,7 @@ export const CartDrawer: React.FC = () => {
                   <div className="pt-1 flex items-center justify-center gap-3 text-[10px] text-stone-500">
                     <span className="flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      M-Pesa Till 5424564
+                      {paymentLabel}
                     </span>
                     <span>•</span>
                     <span>Instant WhatsApp Confirmation</span>
