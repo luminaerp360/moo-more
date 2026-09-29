@@ -110,8 +110,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F4F7F4] flex">
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-64 shrink-0 bg-[#0F3020] sticky top-0 h-screen">
+      {/* Desktop sidebar - Fixed to left viewport edge */}
+      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 bg-[#0F3020] z-40">
         {sidebar}
       </aside>
 
@@ -139,7 +139,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
         {/* Topbar */}
         <header className="bg-white border-b border-stone-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3">

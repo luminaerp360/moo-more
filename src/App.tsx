@@ -198,16 +198,49 @@ export default function App() {
     }
   };
 
+  // 1. Full-screen dedicated Login page
+  if (currentPage === 'login') {
+    return <LoginPage onNavigate={handleNavigate} />;
+  }
+
+  // 2. Full-screen dedicated Admin dashboard & management portal
+  if (isAdminPage(currentPage)) {
+    if (!isAuthenticated) {
+      return <LoginPage onNavigate={handleNavigate} />;
+    }
+    if (!isAdmin) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F4F7F4] px-4">
+          <div className="bg-white rounded-xl border border-stone-200 shadow-md p-8 max-w-md text-center">
+            <h2 className="text-xl font-bold text-[#0F3020] font-serif-heading">Access Denied</h2>
+            <p className="text-sm text-stone-500 mt-2">
+              Your account does not have administrator privileges.
+            </p>
+            <button
+              onClick={() => handleNavigate('home')}
+              className="mt-5 px-4 py-2 bg-[#15803D] hover:bg-[#166534] text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              Back to Website
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <AdminLayout currentPage={currentPage} onNavigate={handleNavigate}>
+        {renderAdminContent()}
+      </AdminLayout>
+    );
+  }
+
+  // 3. Public Website with Navbar, Animated Route transitions & Footer
   return (
     <div className="min-h-screen flex flex-col bg-white text-stone-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
-      {/* Top Navbar (hidden on login/admin) */}
-      {showPublicChrome && (
-        <Navbar
-          currentPage={currentPage}
-          onNavigate={handleNavigate}
-          onOpenOrder={() => handleOpenOrder()}
-        />
-      )}
+      <Navbar
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onOpenOrder={() => handleOpenOrder()}
+      />
 
       {/* Main Page Body with Animated Route Transitions */}
       <main className="flex-1 overflow-x-hidden">
@@ -224,16 +257,12 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Site Footer (hidden on login/admin) */}
-      {showPublicChrome && (
-        <Footer
-          onNavigate={handleNavigate}
-          onOpenOrder={() => handleOpenOrder()}
-        />
-      )}
+      <Footer
+        onNavigate={handleNavigate}
+        onOpenOrder={() => handleOpenOrder()}
+      />
 
-      {/* Persistent Floating WhatsApp Help & Order Widget (public only) */}
-      {showPublicChrome && <FloatingWhatsApp />}
+      <FloatingWhatsApp />
 
       {/* Interactive Order Milk / Product Modal */}
       <OrderModal
