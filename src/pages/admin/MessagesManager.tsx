@@ -28,12 +28,14 @@ import {
 export const MessagesManager: React.FC = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read' | 'replied'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const selectedMessage = messages.find((m) => (m._id || m.id) === selectedId) || null;
 
   const notify = (message: string, type: 'success' | 'error' = 'success') => {
     setToast(message);
@@ -46,17 +48,13 @@ export const MessagesManager: React.FC = () => {
     try {
       const data = await contactApi.getAll();
       setMessages(data || []);
-      if (selectedMessage) {
-        const updated = data.find((m) => (m._id || m.id) === (selectedMessage._id || selectedMessage.id));
-        if (updated) setSelectedMessage(updated);
-      }
     } catch (err) {
       console.error('Failed to load contact messages:', err);
       notify('Failed to load inquiries', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMessage]);
+  }, []);
 
   useEffect(() => {
     loadMessages();
@@ -71,9 +69,6 @@ export const MessagesManager: React.FC = () => {
       setMessages((prev) =>
         prev.map((m) => ((m._id || m.id) === id ? { ...m, status: newStatus } : m))
       );
-      if ((selectedMessage?._id || selectedMessage?.id) === id) {
-        setSelectedMessage((prev) => (prev ? { ...prev, status: newStatus } : null));
-      }
       notify(`Inquiry marked as ${newStatus}`);
     } catch (err) {
       console.error('Failed to update message status:', err);
@@ -91,8 +86,8 @@ export const MessagesManager: React.FC = () => {
     try {
       await contactApi.remove(id);
       setMessages((prev) => prev.filter((m) => (m._id || m.id) !== id));
-      if ((selectedMessage?._id || selectedMessage?.id) === id) {
-        setSelectedMessage(null);
+      if (selectedId === id) {
+        setSelectedId(null);
       }
       notify('Message removed successfully');
     } catch (err) {
@@ -237,14 +232,15 @@ export const MessagesManager: React.FC = () => {
           {/* Message List Column */}
           <div className="lg:col-span-5 space-y-3">
             {filteredMessages.map((msg) => {
-              const isSelected = (selectedMessage?._id || selectedMessage?.id) === (msg._id || msg.id);
+              const msgId = msg._id || msg.id;
+              const isSelected = selectedId === msgId;
               const isUnread = !msg.status || msg.status === 'unread';
 
               return (
                 <div
-                  key={msg._id || msg.id}
+                  key={msgId}
                   onClick={() => {
-                    setSelectedMessage(msg);
+                    setSelectedId(msgId || null);
                     if (isUnread) handleStatusChange(msg, 'read');
                   }}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
@@ -419,26 +415,29 @@ export const MessagesManager: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {selectedMessage.status !== 'replied' && (
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(selectedMessage, 'replied')}
                         disabled={isUpdating}
-                        className="px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                       >
                         Mark as Replied
                       </button>
                     )}
                     {selectedMessage.status === 'unread' ? (
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(selectedMessage, 'read')}
                         disabled={isUpdating}
-                        className="px-3 py-2 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                        className="px-3 py-2 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                       >
                         Mark as Read
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(selectedMessage, 'unread')}
                         disabled={isUpdating}
-                        className="px-3 py-2 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
+                        className="px-3 py-2 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors cursor-pointer disabled:opacity-50"
                       >
                         Mark Unread
                       </button>
