@@ -31,6 +31,9 @@ import { TeamManager } from './pages/admin/TeamManager';
 import { ProductsManager } from './pages/admin/ProductsManager';
 import { CategoriesManager } from './pages/admin/CategoriesManager';
 import { OrdersManager } from './pages/admin/OrdersManager';
+import { MessagesManager } from './pages/admin/MessagesManager';
+import { SettingsManager } from './pages/admin/SettingsManager';
+import { ReviewsManager } from './pages/admin/ReviewsManager';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>('home');
@@ -120,6 +123,12 @@ export default function App() {
         return <CategoriesManager />;
       case 'admin/orders':
         return <OrdersManager />;
+      case 'admin/messages':
+        return <MessagesManager />;
+      case 'admin/settings':
+        return <SettingsManager />;
+      case 'admin/reviews':
+        return <ReviewsManager />;
       default:
         return <AdminDashboard onNavigate={handleNavigate} />;
     }

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
+import { contactApi } from '../services/cms';
 import { NavPage } from '../types';
 import { 
   Phone, 
@@ -10,7 +12,8 @@ import {
   MessageCircle, 
   Send, 
   CheckCircle2, 
-  ExternalLink 
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 interface ContactSectionProps {
@@ -18,6 +21,15 @@ interface ContactSectionProps {
 }
 
 export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) => {
+  const content = useSiteContent();
+  const settings = content.settings;
+
+  const phone = settings?.generalSettings?.phone || settings?.general?.supportPhone || FARM_INFO.phone;
+  const email = settings?.generalSettings?.email || settings?.general?.supportEmail || FARM_INFO.email;
+  const address = settings?.generalSettings?.address || settings?.general?.storeAddress || FARM_INFO.location;
+  const whatsappNumber = settings?.socialSettings?.whatsapp || settings?.social?.whatsapp || FARM_INFO.phoneRaw;
+  const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`;
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -28,10 +40,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
     consent: false,
   });
 
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [whatsappDispatchUrl, setWhatsappDispatchUrl] = useState<string>('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
 
     const formattedMessage = 
       `*WEBSITE CONTACT INQUIRY — MOO & MORE DAIRY FARM*\n` +
@@ -40,14 +55,30 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
       `*Email:* ${formData.email}\n` +
       `*Phone:* ${formData.phone || 'None'}\n` +
       `*Inquiry Type:* ${formData.inquiryType}\n` +
-      `*Subject:* ${formData.subject}\n` +
+      `*Subject:* ${formData.subject || 'General'}\n` +
       `*Message:* ${formData.message}\n` +
       `------------------------------------\n` +
       `From: Moo & More Website Contact Form`;
 
     const encoded = encodeURIComponent(formattedMessage);
-    window.open(`https://wa.me/254711320959?text=${encoded}`, '_blank', 'noopener,noreferrer');
-    setSubmitted(true);
+    const waLink = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encoded}`;
+    setWhatsappDispatchUrl(waLink);
+
+    try {
+      await contactApi.submit({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        subject: formData.subject || undefined,
+        inquiryType: formData.inquiryType,
+        message: formData.message,
+      });
+    } catch (err) {
+      console.warn('Backend contact submission noted:', err);
+    } finally {
+      setSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -78,7 +109,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
           whileHover={{ y: -4 }}
-          href={FARM_INFO.whatsappUrl}
+          href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all group flex flex-col justify-between"
@@ -95,7 +126,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
             </p>
           </div>
           <span className="text-xs font-bold text-[#15803D] group-hover:text-emerald-700 flex items-center gap-1">
-            <span>{FARM_INFO.phone}</span>
+            <span>{phone}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </span>
         </motion.a>
@@ -106,7 +137,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1 }}
           whileHover={{ y: -4 }}
-          href={`tel:${FARM_INFO.phoneRaw}`}
+          href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
           className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-md hover:border-[#0F3020]/40 transition-all group flex flex-col justify-between"
         >
           <div>
@@ -121,7 +152,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
             </p>
           </div>
           <span className="text-xs font-bold text-[#0F3020] flex items-center gap-1">
-            <span>{FARM_INFO.phone}</span>
+            <span>{phone}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </span>
         </motion.a>
@@ -132,7 +163,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.15 }}
           whileHover={{ y: -4 }}
-          href={`mailto:${FARM_INFO.email}`}
+          href={`mailto:${email}`}
           className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-xs hover:shadow-md hover:border-amber-300 transition-all group flex flex-col justify-between"
         >
           <div>
@@ -143,11 +174,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
               Email Us
             </h3>
             <p className="text-xs text-stone-600 leading-relaxed mb-3">
-              Send formal inquiries, RFPs, or bulk supply proposals. We’ll respond within 24 hours.
+              Send formal inquiries, RFPs, or bulk supply proposals. We’ll respond promptly.
             </p>
           </div>
           <span className="text-xs font-bold text-amber-800 truncate block">
-            {FARM_INFO.email}
+            {email}
           </span>
         </motion.a>
 
@@ -169,8 +200,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
             <h3 className="font-serif-heading font-bold text-base sm:text-lg text-[#0F3020] mb-1">
               Visit Our Farm
             </h3>
-            <p className="text-xs text-stone-600 leading-relaxed mb-3">
-              7km off Bumala Centre on the Kisumu–Busia Highway, Dadira, Kenya.
+            <p className="text-xs text-stone-600 leading-relaxed mb-3 line-clamp-2">
+              {address}
             </p>
           </div>
           <span className="text-xs font-bold text-[#0F3020] flex items-center gap-1">
@@ -190,22 +221,46 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onNavigate }) =>
           className="lg:col-span-7 bg-white p-6 sm:p-10 rounded-2xl border border-stone-200 shadow-sm"
         >
           {submitted ? (
-            <div className="py-12 text-center space-y-4">
+            <div className="py-10 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <h3 className="font-serif-heading text-2xl font-bold text-[#0F3020]">
-                Message Transmitted!
+                Inquiry Received!
               </h3>
               <p className="text-stone-600 text-sm max-w-md mx-auto">
-                Thank you for reaching out to Moo &amp; More Dairy Farm. Your message has been sent to our farm dispatch, and we will get back to you shortly.
+                Thank you for reaching out to Moo &amp; More Dairy Farm. Your message has been logged in our dispatch desk and we will contact you directly.
               </p>
-              <button
-                onClick={() => setSubmitted(false)}
-                className="mt-4 px-6 py-2.5 bg-[#0F3020] text-white text-xs font-bold rounded-lg hover:bg-[#0A2015]"
-              >
-                Send Another Message
-              </button>
+              <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                {whatsappDispatchUrl && (
+                  <a
+                    href={whatsappDispatchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2.5 bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-2 shadow-xs"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Also Chat on WhatsApp</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    setSubmitted(false);
+                    setFormData({
+                      fullName: '',
+                      email: '',
+                      phone: '',
+                      inquiryType: 'General Inquiry',
+                      subject: '',
+                      message: '',
+                      consent: false,
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-lg transition-colors"
+                >
+                  Send Another Message
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

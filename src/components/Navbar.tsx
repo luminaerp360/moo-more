@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { NavPage } from '../types';
 import { FARM_INFO } from '../data/farmData';
 import { useAuth } from '../context/AuthContext';
+import { useSiteContent } from '../context/ContentContext';
 import { BrandLogo } from './BrandLogo';
 import { 
   Phone, 
@@ -33,6 +34,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isAdmin, isAuthenticated, logout } = useAuth();
+  const { settings } = useSiteContent();
+
+  const phone = settings?.generalSettings?.phone || settings?.general?.supportPhone || FARM_INFO.phone;
+  const phoneRaw = phone.replace(/[^\d+]/g, '');
+  const hours = settings?.generalSettings?.operatingHours || FARM_INFO.hours;
+
+  const rawWhatsapp = settings?.socialSettings?.whatsapp || settings?.social?.whatsapp;
+  const whatsappUrl = rawWhatsapp
+    ? rawWhatsapp.startsWith('http')
+      ? rawWhatsapp
+      : `https://wa.me/${rawWhatsapp.replace(/[^\d]/g, '')}`
+    : FARM_INFO.whatsappUrl;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,15 +91,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-5">
             <a 
-              href={`tel:${FARM_INFO.phoneRaw}`} 
+              href={`tel:${phoneRaw}`} 
               className="flex items-center gap-1.5 hover:text-emerald-300 transition-colors"
               title="Call Moo & More Dairy Farm"
             >
               <Phone className="w-3 h-3 text-emerald-400" />
-              <span>{FARM_INFO.phone}</span>
+              <span>{phone}</span>
             </a>
             <a 
-              href={FARM_INFO.whatsappUrl} 
+              href={whatsappUrl} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 hover:text-emerald-300 transition-colors"
@@ -97,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </a>
             <div className="flex items-center gap-1.5 text-stone-300">
               <Clock className="w-3 h-3 text-emerald-400" />
-              <span>{FARM_INFO.hours}</span>
+              <span>{hours}</span>
             </div>
           </div>
 
@@ -343,14 +356,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
                 <a
-                  href={`tel:${FARM_INFO.phoneRaw}`}
+                  href={`tel:${phoneRaw}`}
                   className="flex items-center justify-center gap-1.5 p-2 bg-stone-100 rounded-md text-[#0F3020] font-semibold text-[11px]"
                 >
                   <Phone className="w-3 h-3 text-[#15803D]" />
-                  <span>{FARM_INFO.phone}</span>
+                  <span>{phone}</span>
                 </a>
                 <a
-                  href={FARM_INFO.whatsappUrl}
+                  href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 p-2 bg-emerald-50 text-emerald-800 rounded-md font-semibold text-[11px]"

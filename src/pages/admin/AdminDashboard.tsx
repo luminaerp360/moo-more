@@ -11,6 +11,9 @@ import {
   Tags,
   ShoppingCart,
   Users,
+  MessageSquare,
+  Settings,
+  Star,
   ChevronRight,
 } from 'lucide-react';
 
@@ -92,6 +95,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       page: 'admin/orders',
       icon: <ShoppingCart className="w-6 h-6" />,
       bgClass: 'bg-purple-50 text-purple-600',
+    },
+    {
+      title: 'Customer Inquiries',
+      description: 'Read and respond to contact form submissions',
+      page: 'admin/messages',
+      icon: <MessageSquare className="w-6 h-6" />,
+      bgClass: 'bg-rose-50 text-rose-600',
+    },
+    {
+      title: 'Customer Reviews',
+      description: 'Review submissions, verify/approve and manage testimonials',
+      page: 'admin/reviews',
+      icon: <Star className="w-6 h-6" />,
+      bgClass: 'bg-amber-50 text-amber-600',
+    },
+    {
+      title: 'Farm Settings',
+      description: 'Edit phone, email, WhatsApp, address and socials',
+      page: 'admin/settings',
+      icon: <Settings className="w-6 h-6" />,
+      bgClass: 'bg-indigo-50 text-indigo-600',
     },
   ];
 

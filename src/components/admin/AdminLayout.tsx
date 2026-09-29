@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavPage } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { getTenantId } from '../../services/api';
 import { BrandLogo } from '../BrandLogo';
 import {
   LayoutDashboard,
@@ -14,10 +15,14 @@ import {
   Package,
   Tags,
   ShoppingCart,
+  MessageSquare,
+  Settings,
+  Star,
   LogOut,
   Globe,
   Menu,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -37,6 +42,9 @@ const sections: { page: NavPage; label: string; icon: React.ReactNode }[] = [
   { page: 'admin/products', label: 'Products', icon: <Package className="w-4 h-4" /> },
   { page: 'admin/categories', label: 'Categories', icon: <Tags className="w-4 h-4" /> },
   { page: 'admin/orders', label: 'Orders', icon: <ShoppingCart className="w-4 h-4" /> },
+  { page: 'admin/reviews', label: 'Reviews', icon: <Star className="w-4 h-4" /> },
+  { page: 'admin/messages', label: 'Inquiries', icon: <MessageSquare className="w-4 h-4" /> },
+  { page: 'admin/settings', label: 'Farm Settings', icon: <Settings className="w-4 h-4" /> },
 ];
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
@@ -152,6 +160,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-full text-xs font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Tenant: <strong className="font-semibold">{user?.tenantId || getTenantId()}</strong></span>
+              </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-[#15803D] text-white flex items-center justify-center text-xs font-bold uppercase">
                   {user?.email?.charAt(0) ?? 'A'}

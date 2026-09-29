@@ -3,6 +3,8 @@ import { motion, AnimatePresence, Variants } from 'motion/react';
 import { TESTIMONIALS } from '../data/farmData';
 import { Testimonial } from '../types';
 import { PersonAvatar } from './PersonAvatar';
+import { useSiteContent } from '../context/ContentContext';
+import { reviewsApi } from '../services/cms';
 import { 
   Star, 
   Quote, 
@@ -16,10 +18,20 @@ import {
   MapPin,
   Calendar,
   ArrowRight,
-  ShoppingBag
+  ShoppingBag,
+  PenLine,
+  X,
+  Loader2,
+  AlertCircle,
+  ThumbsUp
 } from 'lucide-react';
 
 export const TestimonialSection: React.FC = () => {
+  const { testimonialItems } = useSiteContent();
+  const allTestimonials: Testimonial[] = (testimonialItems && testimonialItems.length > 0)
+    ? testimonialItems
+    : TESTIMONIALS;
+
   const [filter, setFilter] = useState<'all' | 'distributor' | 'farmer' | 'business' | 'consumer' | 'hospitality'>('all');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<number>(1);
@@ -27,13 +39,84 @@ export const TestimonialSection: React.FC = () => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
 
+  // Modal & form states for customer reviews
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: '',
+    location: '',
+    rating: 5,
+    category: 'consumer' as 'distributor' | 'farmer' | 'business' | 'consumer' | 'hospitality',
+    product: '',
+    comment: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      role: '',
+      location: '',
+      rating: 5,
+      category: 'consumer',
+      product: '',
+      comment: '',
+    });
+    setSubmitError(null);
+    setIsSuccess(false);
+  };
+
+  const handleOpenModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.comment.trim()) {
+      setSubmitError('Please enter your name and a brief review message.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      await reviewsApi.submit({
+        name: formData.name.trim(),
+        email: formData.email.trim() || undefined,
+        role: formData.role.trim() || 'Verified Customer',
+        location: formData.location.trim() || 'Kenya',
+        rating: formData.rating,
+        category: formData.category,
+        product: formData.product.trim() || undefined,
+        comment: formData.comment.trim(),
+      });
+      setIsSuccess(true);
+    } catch (err: any) {
+      console.error('Failed to submit review:', err);
+      setSubmitError(err?.message || 'Could not submit your review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filtered: Testimonial[] = filter === 'all' 
-    ? TESTIMONIALS 
-    : TESTIMONIALS.filter(t => t.category === filter);
+    ? allTestimonials 
+    : allTestimonials.filter(t => t.category === filter);
 
   // Safety fallback for index when filter changes
   const activeIndex = currentIndex % (filtered.length || 1);
-  const currentReview = filtered[activeIndex] || TESTIMONIALS[0];
+  const currentReview = filtered[activeIndex] || allTestimonials[0] || TESTIMONIALS[0];
 
   // Derive previous and next items for the 3-card panoramic deck
   const prevIndex = (activeIndex - 1 + filtered.length) % filtered.length;
@@ -86,12 +169,12 @@ export const TestimonialSection: React.FC = () => {
   };
 
   const categories = [
-    { id: 'all', label: 'All Reviews', count: TESTIMONIALS.length },
-    { id: 'distributor', label: 'Wholesale & Vendors', count: TESTIMONIALS.filter(t => t.category === 'distributor').length },
-    { id: 'farmer', label: 'Dairy Farmers', count: TESTIMONIALS.filter(t => t.category === 'farmer').length },
-    { id: 'business', label: 'Cafes & Chefs', count: TESTIMONIALS.filter(t => t.category === 'business').length },
-    { id: 'consumer', label: 'Families & Homes', count: TESTIMONIALS.filter(t => t.category === 'consumer').length },
-    { id: 'hospitality', label: 'Hotels & Dining', count: TESTIMONIALS.filter(t => t.category === 'hospitality').length },
+    { id: 'all', label: 'All Reviews', count: allTestimonials.length },
+    { id: 'distributor', label: 'Wholesale & Vendors', count: allTestimonials.filter(t => t.category === 'distributor').length },
+    { id: 'farmer', label: 'Dairy Farmers', count: allTestimonials.filter(t => t.category === 'farmer').length },
+    { id: 'business', label: 'Cafes & Chefs', count: allTestimonials.filter(t => t.category === 'business').length },
+    { id: 'consumer', label: 'Families & Homes', count: allTestimonials.filter(t => t.category === 'consumer').length },
+    { id: 'hospitality', label: 'Hotels & Dining', count: allTestimonials.filter(t => t.category === 'hospitality').length },
   ];
 
   // Sliding card variants
@@ -122,8 +205,9 @@ export const TestimonialSection: React.FC = () => {
   };
 
   // Continuous ribbon rows
-  const marqueeRowOne = [...TESTIMONIALS, ...TESTIMONIALS];
-  const marqueeRowTwo = [...TESTIMONIALS.slice(6), ...TESTIMONIALS.slice(0, 6), ...TESTIMONIALS];
+  const marqueeRowOne = [...allTestimonials, ...allTestimonials];
+  const halfLen = Math.max(1, Math.floor(allTestimonials.length / 2));
+  const marqueeRowTwo = [...allTestimonials.slice(halfLen), ...allTestimonials.slice(0, halfLen), ...allTestimonials];
 
   return (
     <section className="py-14 sm:py-20 bg-gradient-to-b from-[#F4F7F4] via-[#EEF4EE] to-[#F4F7F4] border-t border-stone-200/80 overflow-hidden relative">
@@ -212,56 +296,68 @@ export const TestimonialSection: React.FC = () => {
             ))}
           </div>
 
-          {/* Autoplay & Direction Controls */}
-          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-stone-200/90 shadow-xs shrink-0">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`p-1.5 rounded-full text-xs flex items-center gap-1.5 font-medium transition-colors cursor-pointer ${
-                isPlaying 
-                  ? 'text-emerald-700 hover:bg-emerald-50' 
-                  : 'text-stone-500 hover:bg-stone-100'
-              }`}
-              title={isPlaying ? 'Pause auto-moving carousel' : 'Start auto-moving carousel'}
-              aria-label={isPlaying ? 'Pause auto-moving carousel' : 'Start auto-moving carousel'}
+          {/* Autoplay & Direction Controls + Review Button */}
+          <div className="flex items-center gap-2.5 flex-wrap justify-center shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleOpenModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#15803D] hover:bg-[#0F3020] text-white shadow-xs transition-colors cursor-pointer"
             >
-              {isPlaying ? (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
-                  </span>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span className="text-[11px] font-bold text-emerald-900">Auto-Moving</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span className="text-[11px] font-medium text-stone-600">Paused</span>
-                </>
-              )}
-            </button>
+              <PenLine className="w-3.5 h-3.5" />
+              <span>Write a Review</span>
+            </motion.button>
 
-            <div className="h-4 w-px bg-stone-200 mx-1"></div>
+            <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-stone-200/90 shadow-xs shrink-0">
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`p-1.5 rounded-full text-xs flex items-center gap-1.5 font-medium transition-colors cursor-pointer ${
+                  isPlaying 
+                    ? 'text-emerald-700 hover:bg-emerald-50' 
+                    : 'text-stone-500 hover:bg-stone-100'
+                }`}
+                title={isPlaying ? 'Pause auto-moving carousel' : 'Start auto-moving carousel'}
+                aria-label={isPlaying ? 'Pause auto-moving carousel' : 'Start auto-moving carousel'}
+              >
+                {isPlaying ? (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                    </span>
+                    <Pause className="w-3.5 h-3.5 fill-current" />
+                    <span className="text-[11px] font-bold text-emerald-900">Auto-Moving</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span className="text-[11px] font-medium text-stone-600">Paused</span>
+                  </>
+                )}
+              </button>
 
-            <button
-              onClick={handlePrev}
-              className="p-1 rounded-full hover:bg-stone-100 text-stone-700 transition-colors cursor-pointer"
-              aria-label="Previous review"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              <div className="h-4 w-px bg-stone-200 mx-1"></div>
 
-            <span className="text-xs font-mono font-medium text-stone-500 px-1">
-              {activeIndex + 1}/{filtered.length}
-            </span>
+              <button
+                onClick={handlePrev}
+                className="p-1 rounded-full hover:bg-stone-100 text-stone-700 transition-colors cursor-pointer"
+                aria-label="Previous review"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-            <button
-              onClick={handleNext}
-              className="p-1 rounded-full hover:bg-stone-100 text-stone-700 transition-colors cursor-pointer"
-              aria-label="Next review"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <span className="text-xs font-mono font-medium text-stone-500 px-1">
+                {activeIndex + 1}/{filtered.length}
+              </span>
+
+              <button
+                onClick={handleNext}
+                className="p-1 rounded-full hover:bg-stone-100 text-stone-700 transition-colors cursor-pointer"
+                aria-label="Next review"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -652,24 +748,316 @@ export const TestimonialSection: React.FC = () => {
               Have you tasted our milk or visited our pastures?
             </h4>
             <p className="text-xs text-stone-600">
-              We value direct feedback from families, retail vendors, cafe baristas, and dairy farmers.
+              We value direct feedback from families, retail vendors, cafe baristas, and dairy farmers across Kenya.
             </p>
           </div>
 
-          <motion.a
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            href="https://wa.me/254711320959?text=Hello%20Moo%20%26%20More%20Farm,%20I%20would%20like%20to%20submit%20a%20review%20of%20your%20dairy%20products."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 bg-[#0F3020] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
-          >
-            <span>Submit a Customer Review</span>
-            <ArrowRight className="w-4 h-4 text-emerald-300" />
-          </motion.a>
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleOpenModal}
+              className="inline-flex items-center gap-2 px-5 py-3 bg-[#0F3020] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <PenLine className="w-4 h-4 text-emerald-300" />
+              <span>Write a Review</span>
+            </motion.button>
+          </div>
         </div>
 
       </div>
+
+      {/* 6. WRITE A REVIEW MODAL */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseModal}
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 sm:p-7 z-10 my-8 overflow-hidden max-h-[92vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-stone-100">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200 mb-1">
+                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    <span>Customer Feedback</span>
+                  </div>
+                  <h3 className="text-xl font-bold font-serif-heading text-[#0F3020]">
+                    Share Your Farm Experience
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Your authentic review helps Kenyan dairy lovers and farmers make great choices.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto py-4 flex-1 pr-1">
+                {isSuccess ? (
+                  <div className="text-center py-6 px-4 space-y-4">
+                    <div className="w-16 h-16 bg-emerald-100 text-[#15803D] rounded-full flex items-center justify-center mx-auto shadow-inner">
+                      <CheckCircle2 className="w-10 h-10" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-lg font-bold text-[#0F3020] font-serif-heading">
+                        Thank You For Your Review!
+                      </h4>
+                      <p className="text-xs text-stone-600 max-w-sm mx-auto leading-relaxed">
+                        Your review has been successfully submitted to Moo &amp; More Farm. To maintain trust and authenticity, our admin team verifies each review before publishing it live on the website.
+                      </p>
+                    </div>
+
+                    <div className="bg-[#F4F7F4] rounded-xl p-3.5 border border-stone-200 text-left text-xs max-w-sm mx-auto space-y-1">
+                      <div className="flex items-center gap-1 text-amber-400">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${
+                              i < formData.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-stone-700 italic">"{formData.comment}"</p>
+                      <p className="text-[11px] font-bold text-stone-900 mt-1">
+                        — {formData.name} ({formData.role || 'Customer'})
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex justify-center gap-3">
+                      <button
+                        onClick={handleCloseModal}
+                        className="px-6 py-2.5 bg-[#0F3020] hover:bg-[#15803D] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                      >
+                        Done
+                      </button>
+                      <button
+                        onClick={resetForm}
+                        className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium rounded-xl transition-colors cursor-pointer"
+                      >
+                        Submit Another
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitReview} className="space-y-4 text-left">
+                    {submitError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                        <span>{submitError}</span>
+                      </div>
+                    )}
+
+                    {/* Star Rating Selector */}
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                        Your Overall Rating *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const isFilled = (hoveredStar ?? formData.rating) >= star;
+                            return (
+                              <button
+                                key={star}
+                                type="button"
+                                onMouseEnter={() => setHoveredStar(star)}
+                                onMouseLeave={() => setHoveredStar(null)}
+                                onClick={() => setFormData((prev) => ({ ...prev, rating: star }))}
+                                className="p-1 text-amber-400 hover:scale-110 transition-transform cursor-pointer"
+                                aria-label={`Rate ${star} stars`}
+                              >
+                                <Star
+                                  className={`w-6 h-6 ${
+                                    isFilled ? 'fill-amber-400 text-amber-400' : 'text-stone-300'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <span className="text-xs font-semibold text-stone-600 ml-2">
+                          {(hoveredStar ?? formData.rating) === 5 && '⭐️⭐️⭐️⭐️⭐️ Outstanding'}
+                          {(hoveredStar ?? formData.rating) === 4 && '⭐️⭐️⭐️⭐️ Very Good'}
+                          {(hoveredStar ?? formData.rating) === 3 && '⭐️⭐️⭐️ Good'}
+                          {(hoveredStar ?? formData.rating) === 2 && '⭐️⭐️ Fair'}
+                          {(hoveredStar ?? formData.rating) === 1 && '⭐️ Poor'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Full Name & Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          Your Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="e.g., Wangari Maina"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          Email (Optional, kept private)
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="wangari@example.com"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Category & Role */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          You Are A... *
+                        </label>
+                        <select
+                          value={formData.category}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              category: e.target.value as any,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D] bg-white"
+                        >
+                          <option value="consumer">Family / Individual Consumer</option>
+                          <option value="farmer">Dairy Farmer / Breeder</option>
+                          <option value="business">Cafe / Restaurant / Bakery</option>
+                          <option value="distributor">Wholesale / Retail Vendor</option>
+                          <option value="hospitality">Hotel / Hospitality Resort</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          Your Role / Title
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.role}
+                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                          placeholder="e.g. Home Cook, Head Barista, Farmer"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Location & Product Mentioned */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          Town / County
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.location}
+                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          placeholder="e.g. Eldoret, Nairobi, Nakuru"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 mb-1">
+                          Product or Service
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.product}
+                          onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                          placeholder="e.g. Fresh Milk, Lala, Dairy Cow"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Review Textarea */}
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Your Review &amp; Experience *
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={formData.comment}
+                        onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                        placeholder="Tell others what you loved about our dairy milk quality, freshness, customer support, or dairy livestock..."
+                        className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D] resize-none"
+                      />
+                    </div>
+
+                    {/* Notice */}
+                    <p className="text-[11px] text-stone-500 leading-tight">
+                      ℹ️ Submissions undergo verification by our farm admin before appearing publicly to maintain review authenticity.
+                    </p>
+
+                    {/* Modal Footer Actions */}
+                    <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-stone-100">
+                      <button
+                        type="button"
+                        onClick={handleCloseModal}
+                        disabled={isSubmitting}
+                        className="px-4 py-2 text-xs text-stone-600 hover:text-stone-800 font-medium cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-5 py-2 text-xs font-semibold text-white bg-[#0F3020] hover:bg-[#15803D] rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Submitting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Submit Review</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };

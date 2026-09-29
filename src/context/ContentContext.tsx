@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import {
   HeroSection,
   SpecialOffer,
@@ -19,13 +19,20 @@ import {
   BlogPost,
   GalleryItem,
   TeamMember,
+  StoreSettings,
+  ReviewRecord,
+  Testimonial,
 } from '../types';
-import { homeContentApi, aboutApi, farmServicesApi, teamApi, galleryApi, blogsApi, productsApi } from '../services/cms';
+import { homeContentApi, aboutApi, farmServicesApi, teamApi, galleryApi, blogsApi, productsApi, settingsApi, reviewsApi } from '../services/cms';
 import { mapProducts, mapServices, mapBlogs, mapGallery, mapTeam } from '../services/contentMaps';
 import { PRODUCTS, SERVICES, BLOG_POSTS, GALLERY_ITEMS, TEAM_MEMBERS } from '../data/farmData';
+import { getTenantId } from '../services/api';
 
 interface SiteContentValue {
   loading: boolean;
+  currentTenantId: string;
+  refetchContent: () => Promise<void>;
+  refreshContent: () => Promise<void>;
   hero: HeroSection | null;
   specialOffers: SpecialOffer[];
   statsCounters: StatsCounter[];
@@ -40,18 +47,22 @@ interface SiteContentValue {
   gallery: GalleryRecord[];
   blogs: BlogRecord[];
   products: ProductRecord[];
+  settings: StoreSettings | null;
+  reviews: ReviewRecord[];
   // Mapped collections (fall back to static site data when the API has none)
   productItems: ProductItem[];
   serviceItems: ServiceItem[];
   blogPosts: BlogPost[];
   galleryItems: GalleryItem[];
   teamItems: TeamMember[];
+  testimonialItems: Testimonial[];
 }
 
 const SiteContentContext = createContext<SiteContentValue | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
+  const [currentTenantId, setCurrentTenantId] = useState<string>(() => getTenantId());
   const [hero, setHero] = useState<HeroSection | null>(null);
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
   const [statsCounters, setStatsCounters] = useState<StatsCounter[]>([]);
@@ -66,55 +77,90 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [gallery, setGallery] = useState<GalleryRecord[]>([]);
   const [blogs, setBlogs] = useState<BlogRecord[]>([]);
   const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [reviews, setReviews] = useState<ReviewRecord[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadContent = useCallback(async () => {
+    setLoading(true);
+    const activeTenant = getTenantId();
+    setCurrentTenantId(activeTenant);
 
     const settle = <T,>(p: PromiseSettledResult<T>): T | null =>
       p.status === 'fulfilled' ? p.value : null;
 
-    Promise.allSettled([
-      homeContentApi.getHeroSection(),
-      homeContentApi.getSpecialOffers(),
-      homeContentApi.getStatsCounters(),
-      homeContentApi.getNewsletterSection(),
-      aboutApi.getAboutHero(),
-      aboutApi.getCompanyStats(),
-      aboutApi.getCompanyValues(),
-      aboutApi.getMilestones(),
-      aboutApi.getCompanyMission(),
-      farmServicesApi.getAll(),
-      teamApi.getAll(),
-      galleryApi.findAll(),
-      blogsApi.getAll(),
-      productsApi.getAll(),
-    ])
-      .then(([h, o, c, n, ah, as, av, am, mi, fs, tm, ga, bl, pr]) => {
-        if (cancelled) return;
-        setHero(settle(h));
-        setSpecialOffers(settle(o) || []);
-        setStatsCounters(settle(c) || []);
-        setNewsletter(settle(n));
-        setAboutHero(settle(ah));
-        setCompanyStats(settle(as) || []);
-        setCompanyValues(settle(av) || []);
-        setMilestones(settle(am) || []);
-        setMission(settle(mi));
-        setFarmServices(settle(fs) || []);
-        setTeamMembers(settle(tm) || []);
-        setGallery(settle(ga) || []);
-        setBlogs(settle(bl) || []);
-        setProducts(settle(pr) || []);
-      })
-      .catch((err) => console.error('Failed to load site content from API:', err))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    try {
+      const [h, o, c, n, aboutRes, fs, tm, ga, bl, pr, st, revs] = await Promise.allSettled([
+        homeContentApi.getHeroSection(),
+        homeContentApi.getSpecialOffers(),
+        homeContentApi.getStatsCounters(),
+        homeContentApi.getNewsletterSection(),
+        aboutApi.loadAboutContent(),
+        farmServicesApi.getAll(),
+        teamApi.getAll(),
+        galleryApi.findAll(),
+        blogsApi.getAll(),
+        productsApi.getAll(),
+        settingsApi.get(),
+        reviewsApi.getVerified(),
+      ]);
+
+      setHero(settle(h));
+      setSpecialOffers(settle(o) || []);
+      setStatsCounters(settle(c) || []);
+      setNewsletter(settle(n));
+
+      const about = settle(aboutRes);
+      if (about) {
+        if (about.aboutHero) setAboutHero(about.aboutHero);
+        if (Array.isArray(about.companyStats)) setCompanyStats(about.companyStats);
+        if (Array.isArray(about.companyValues)) setCompanyValues(about.companyValues);
+        if (Array.isArray(about.milestones)) setMilestones(about.milestones);
+        if (about.companyMission) setMission(about.companyMission);
+        if (Array.isArray(about.teamMembers) && about.teamMembers.length > 0) {
+          setTeamMembers(about.teamMembers as TeamMemberRecord[]);
+        }
+      }
+
+      const rawFs = settle(fs);
+      const fsList = Array.isArray(rawFs)
+        ? rawFs
+        : (rawFs as any)?.value && Array.isArray((rawFs as any).value)
+        ? (rawFs as any).value
+        : [];
+      setFarmServices(fsList);
+
+      const rawTm = settle(tm);
+      if (Array.isArray(rawTm) && rawTm.length > 0) {
+        setTeamMembers(rawTm);
+      }
+
+      setGallery(settle(ga) || []);
+      setBlogs(settle(bl) || []);
+      setProducts(settle(pr) || []);
+      setSettings(settle(st) || null);
+      setReviews(settle(revs) || []);
+    } catch (err) {
+      console.error(`Failed to load site content from API for tenant ${activeTenant}:`, err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadContent();
+
+    const handleTenantChange = () => {
+      loadContent();
+    };
+
+    window.addEventListener('tenant-change', handleTenantChange);
+    window.addEventListener('storage', handleTenantChange);
 
     return () => {
-      cancelled = true;
+      window.removeEventListener('tenant-change', handleTenantChange);
+      window.removeEventListener('storage', handleTenantChange);
     };
-  }, []);
+  }, [loadContent]);
 
   const productItems = mapProducts(products);
   const serviceItems = mapServices(farmServices);
@@ -122,8 +168,29 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const galleryItems = mapGallery(gallery);
   const teamItems = mapTeam(teamMembers);
 
+  const dynamicTestimonials: Testimonial[] = reviews.map((r, idx) => ({
+    id: r._id || r.id || `dyn-rev-${idx}`,
+    name: r.name,
+    role: r.role || 'Verified Customer',
+    location: r.location || 'Kenya',
+    rating: r.rating || 5,
+    quote: r.comment,
+    category: (r.category as any) || 'consumer',
+    avatar: r.avatar,
+    date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-KE', { month: 'short', year: 'numeric' }) : undefined,
+    product: r.product,
+    verified: true,
+  }));
+
+  const testimonialItems = dynamicTestimonials.length > 0
+    ? [...dynamicTestimonials, ...TESTIMONIALS]
+    : TESTIMONIALS;
+
   const value: SiteContentValue = {
     loading,
+    currentTenantId,
+    refetchContent: loadContent,
+    refreshContent: loadContent,
     hero,
     specialOffers,
     statsCounters,
@@ -138,11 +205,14 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     gallery,
     blogs,
     products,
+    settings,
+    reviews,
     productItems: productItems.length > 0 ? productItems : PRODUCTS,
     serviceItems: serviceItems.length > 0 ? serviceItems : SERVICES,
     blogPosts: blogPosts.length > 0 ? blogPosts : BLOG_POSTS,
     galleryItems: galleryItems.length > 0 ? galleryItems : GALLERY_ITEMS,
     teamItems: teamItems.length > 0 ? teamItems : TEAM_MEMBERS,
+    testimonialItems,
   };
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>;

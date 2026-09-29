@@ -1,11 +1,45 @@
-import { api, getStoredUser, getToken, setStoredUser, clearAuth, TOKEN_KEY } from './api';
+import {
+  api,
+  getStoredUser,
+  getToken,
+  setStoredUser,
+  clearAuth,
+  TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  setTenantId,
+  clearTenantId,
+  getTenantId,
+  DEFAULT_TENANT_ID,
+} from './api';
 import { AuthUser } from '../types';
 
 interface TokenPayload {
   sub?: string;
   email?: string;
   role?: string;
+  tenantId?: string;
+  tenant_id?: string;
+  tenant?: string;
   exp?: number;
+}
+
+interface LoginApiResponse {
+  access_token: string;
+  refresh_token?: string;
+  user?: {
+    _id?: string;
+    id?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    role?: string;
+    tenantId?: string;
+    tenant_id?: string;
+    permissions?: string[];
+  };
+  tenantId?: string;
+  tenant_id?: string;
 }
 
 export function decodeJwt(token: string): TokenPayload {
@@ -57,30 +91,47 @@ export async function login(
   email: string,
   password: string
 ): Promise<AuthUser> {
-  const response = await api.post<{ access_token: string }>(
+  // Restrict login request specifically to the Moo & More Dairy tenant
+  const response = await api.post<LoginApiResponse>(
     '/auth/login',
     { email, password },
-    undefined,
-    true
+    { 'x-tenant-id': DEFAULT_TENANT_ID }
   );
 
   const token = response.access_token;
   localStorage.setItem(TOKEN_KEY, token);
 
+  if (response.refresh_token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+  }
+
   const decoded = decodeJwt(token);
+
+  // Hardcode tenant strictly to Moo & More Dairy ('moomore-dairy')
+  const tenantId = DEFAULT_TENANT_ID;
+  setTenantId(tenantId);
+
   const user: AuthUser = {
-    id: decoded.sub || '',
-    email: decoded.email || email,
-    role: decoded.role || '',
-    firstName: '',
-    lastName: '',
-    permissions: [],
+    id: response.user?._id || response.user?.id || decoded.sub || '',
+    email: response.user?.email || decoded.email || email,
+    role: response.user?.role || decoded.role || '',
+    firstName: response.user?.firstName || '',
+    lastName: response.user?.lastName || '',
+    phoneNumber: response.user?.phoneNumber || '',
+    permissions: response.user?.permissions || [],
+    tenantId,
   };
 
   setStoredUser(user);
+
+  // Notify listeners that tenant context has been updated
+  window.dispatchEvent(new CustomEvent('tenant-change', { detail: { tenantId } }));
+
   return user;
 }
 
 export function logout(): void {
   clearAuth();
+  // Reset back to default tenant and notify listeners
+  window.dispatchEvent(new CustomEvent('tenant-change', { detail: { tenantId: DEFAULT_TENANT_ID } }));
 }

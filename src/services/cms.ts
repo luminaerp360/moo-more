@@ -16,6 +16,9 @@ import {
   ProductRecord,
   CategoryRecord,
   OrderRecord,
+  ContactMessage,
+  StoreSettings,
+  ReviewRecord,
 } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -101,7 +104,10 @@ export const aboutApi = {
 // Farm services  (/farm-services)
 // ---------------------------------------------------------------------------
 export const farmServicesApi = {
-  getAll: () => api.get<FarmServiceRecord[]>('/farm-services'),
+  getAll: async () => {
+    const response = await api.get<FarmServiceRecord[] | { value: FarmServiceRecord[]; Count?: number }>('/farm-services');
+    return Array.isArray(response) ? response : (response?.value || []);
+  },
   getById: (id: string) => api.get<FarmServiceRecord>(`/farm-services/${id}`),
   create: (data: FarmServiceRecord) =>
     api.post<FarmServiceRecord>('/farm-services', data),
@@ -139,7 +145,14 @@ export const blogsApi = {
 // Team members  (/team-members)
 // ---------------------------------------------------------------------------
 export const teamApi = {
-  getAll: () => api.get<TeamMemberRecord[]>('/team-members'),
+  getAll: async () => {
+    const response = await api.get<TeamMemberRecord[] | { value: TeamMemberRecord[]; Count?: number }>('/team-members');
+    return Array.isArray(response) ? response : (response?.value || []);
+  },
+  getActive: async () => {
+    const response = await api.get<TeamMemberRecord[] | { value: TeamMemberRecord[]; Count?: number }>('/team-members/active');
+    return Array.isArray(response) ? response : (response?.value || []);
+  },
   create: (data: TeamMemberRecord) =>
     api.post<TeamMemberRecord>('/team-members', data),
   update: (id: string, data: Partial<TeamMemberRecord>) =>
@@ -184,3 +197,63 @@ export const ordersApi = {
   cancel: (id: string) =>
     api.put<OrderRecord>(`/orders/${id}/cancel`, {}),
 };
+
+// ---------------------------------------------------------------------------
+// Contact Messages  (/contact)
+// ---------------------------------------------------------------------------
+export const contactApi = {
+  submit: (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    subject?: string;
+    inquiryType?: string;
+    message: string;
+  }) => api.post<ContactMessage>('/contact', data),
+  getAll: async () => {
+    const response = await api.get<ContactMessage[] | { value: ContactMessage[]; Count?: number }>('/contact');
+    return Array.isArray(response) ? response : (response?.value || []);
+  },
+  updateStatus: (id: string, status: string) =>
+    api.patch<ContactMessage>(`/contact/${id}`, { status }),
+  remove: (id: string) => api.delete<void>(`/contact/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Store / Farm Settings  (/settings)
+// ---------------------------------------------------------------------------
+export const settingsApi = {
+  get: () => api.get<StoreSettings>('/settings'),
+  update: (data: Partial<StoreSettings>) =>
+    api.put<StoreSettings>('/settings', data),
+};
+
+// ---------------------------------------------------------------------------
+// Customer Reviews  (/reviews)
+// ---------------------------------------------------------------------------
+export const reviewsApi = {
+  getVerified: async () => {
+    const res = await api.get<ReviewRecord[] | { value: ReviewRecord[] }>('/reviews');
+    return Array.isArray(res) ? res : (res?.value || []);
+  },
+  getAllAdmin: async (status?: string) => {
+    const query = status && status !== 'all' ? `?status=${status}` : '?all=true';
+    const res = await api.get<ReviewRecord[] | { value: ReviewRecord[] }>(`/reviews${query}`);
+    return Array.isArray(res) ? res : (res?.value || []);
+  },
+  submit: (data: {
+    name: string;
+    email?: string;
+    role?: string;
+    location?: string;
+    rating: number;
+    comment: string;
+    category?: string;
+    avatar?: string;
+    product?: string;
+  }) => api.post<ReviewRecord>('/reviews', data),
+  updateStatus: (id: string, isVerified: boolean, status?: 'pending' | 'approved' | 'rejected') =>
+    api.patch<ReviewRecord>(`/reviews/${id}/verify`, { isVerified, status }),
+  remove: (id: string) => api.delete<{ success: boolean }>(`/reviews/${id}`),
+};
+

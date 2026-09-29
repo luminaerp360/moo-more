@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { MessageCircle, X, Send } from 'lucide-react';
 
 export const FloatingWhatsApp: React.FC = () => {
+  const { settings } = useSiteContent();
   const [isOpen, setIsOpen] = useState(false);
   const [userQuery, setUserQuery] = useState('');
 
@@ -13,10 +15,18 @@ export const FloatingWhatsApp: React.FC = () => {
     'Hi, I would like to inquire about your dairy cattle breeding & AI services.'
   ];
 
+  const rawPhone =
+    settings?.socialSettings?.whatsapp ||
+    settings?.social?.whatsapp ||
+    settings?.generalSettings?.phone ||
+    settings?.general?.supportPhone ||
+    '254711320959';
+  const cleanPhone = rawPhone.replace(/[^\d]/g, '') || '254711320959';
+
   const handleSendMessage = (textToSend?: string) => {
     const message = textToSend || userQuery || 'Hello Moo & More Dairy Farm, I would like to inquire about your products.';
     const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/254711320959?text=${encoded}`, '_blank', 'noopener,noreferrer');
+    window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank', 'noopener,noreferrer');
     setUserQuery('');
     setIsOpen(false);
   };

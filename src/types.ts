@@ -23,7 +23,10 @@ export type NavPage =
   | 'admin/team'
   | 'admin/products'
   | 'admin/categories'
-  | 'admin/orders';
+  | 'admin/orders'
+  | 'admin/messages'
+  | 'admin/settings'
+  | 'admin/reviews';
 
 export const ADMIN_PAGES: NavPage[] = [
   'admin',
@@ -36,6 +39,9 @@ export const ADMIN_PAGES: NavPage[] = [
   'admin/products',
   'admin/categories',
   'admin/orders',
+  'admin/messages',
+  'admin/settings',
+  'admin/reviews',
 ];
 
 export interface CartItem {
@@ -149,7 +155,9 @@ export interface AuthUser {
   role: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
   permissions: string[];
+  tenantId?: string;
 }
 
 export interface HeroSection {
@@ -319,3 +327,74 @@ export interface OrderRecord {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface ContactMessage {
+  _id?: string;
+  tenantId?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  inquiryType?: string;
+  message: string;
+  status?: string; // 'unread' | 'read' | 'replied'
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GeneralStoreSettings {
+  storeName?: string;
+  storeTagline?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  storeAddress?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  currency?: string;
+  currencySymbol?: string;
+  taxRate?: number;
+  taxInclusive?: boolean;
+  name?: string;
+  tagline?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  logo?: string;
+  operatingHours?: string;
+}
+
+export interface SocialStoreSettings {
+  whatsapp?: string;
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+}
+
+export interface StoreSettings {
+  _id?: string;
+  tenantId?: string;
+  general?: GeneralStoreSettings;
+  social?: SocialStoreSettings;
+  generalSettings?: GeneralStoreSettings;
+  socialSettings?: SocialStoreSettings;
+}
+
+export interface ReviewRecord {
+  _id?: string;
+  id?: string;
+  tenantId?: string;
+  name: string;
+  email?: string;
+  role?: string;
+  location?: string;
+  rating: number;
+  comment: string;
+  category?: 'distributor' | 'farmer' | 'business' | 'consumer' | 'hospitality';
+  avatar?: string;
+  product?: string;
+  isVerified?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+  updatedAt?: string;
+}
+

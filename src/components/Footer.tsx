@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavPage } from '../types';
 import { FARM_INFO } from '../data/farmData';
+import { useSiteContent } from '../context/ContentContext';
 import { BrandLogo } from './BrandLogo';
 import { 
   Phone, 
@@ -21,6 +22,20 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenOrder }) => {
   const currentYear = new Date().getFullYear();
+  const { settings } = useSiteContent();
+
+  const phone = settings?.generalSettings?.phone || settings?.general?.supportPhone || FARM_INFO.phone;
+  const phoneRaw = phone.replace(/[^\d+]/g, '');
+  const email = settings?.generalSettings?.email || settings?.general?.supportEmail || FARM_INFO.email;
+  const location = settings?.generalSettings?.address || settings?.general?.storeAddress || FARM_INFO.location;
+  const hours = settings?.generalSettings?.operatingHours || FARM_INFO.hours;
+
+  const rawWhatsapp = settings?.socialSettings?.whatsapp || settings?.social?.whatsapp;
+  const whatsappUrl = rawWhatsapp
+    ? rawWhatsapp.startsWith('http')
+      ? rawWhatsapp
+      : `https://wa.me/${rawWhatsapp.replace(/[^\d]/g, '')}`
+    : FARM_INFO.whatsappUrl;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -79,7 +94,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenOrder }) => {
             </div>
             <div className="pt-3">
               <a
-                href={FARM_INFO.whatsappUrl}
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700/80 hover:bg-emerald-600 text-white rounded-lg text-sm font-semibold transition-colors"
@@ -217,24 +232,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenOrder }) => {
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
                 <span>
-                  {FARM_INFO.location}
+                  {location}
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href={`tel:${FARM_INFO.phoneRaw}`} className="hover:text-white transition-colors">
-                  {FARM_INFO.phone}
+                <a href={`tel:${phoneRaw}`} className="hover:text-white transition-colors">
+                  {phone}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href={`mailto:${FARM_INFO.email}`} className="hover:text-white transition-colors truncate">
-                  {FARM_INFO.email}
+                <a href={`mailto:${email}`} className="hover:text-white transition-colors truncate">
+                  {email}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{FARM_INFO.hours}</span>
+                <span>{hours}</span>
               </div>
               <div className="pt-2">
                 <a

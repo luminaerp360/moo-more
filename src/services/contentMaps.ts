@@ -21,12 +21,22 @@ const FALLBACK_IMAGES = {
   team: '',
 };
 
-function inferProductCategory(categories: string[] | undefined): ProductItem['category'] {
-  const joined = (categories || []).join(' ').toLowerCase();
-  if (joined.includes('milk')) return 'milk';
-  if (joined.includes('yogur')) return 'yoghurt';
-  if (joined.includes('mala') || joined.includes('cultured')) return 'mala';
-  if (joined.includes('feed') || joined.includes('meal')) return 'feed';
+function inferProductCategory(
+  name: string,
+  description: string,
+  categories?: (string | { name?: string })[]
+): ProductItem['category'] {
+  const catNames = (categories || [])
+    .map((c) => (typeof c === 'object' && c ? c.name || '' : String(c)))
+    .join(' ')
+    .toLowerCase();
+  const text = `${name} ${description} ${catNames}`.toLowerCase();
+
+  if (text.includes('yogur')) return 'yoghurt';
+  if (text.includes('mala') || text.includes('fermented') || text.includes('cultured')) return 'mala';
+  if (text.includes('butter') || text.includes('ghee') || text.includes('cream')) return 'artisan';
+  if (text.includes('feed') || text.includes('meal') || text.includes('silage') || text.includes('fodder')) return 'feed';
+  if (text.includes('milk')) return 'milk';
   return 'artisan';
 }
 
@@ -39,9 +49,9 @@ export function mapProducts(records: ProductRecord[] | null | undefined): Produc
       name: p.name || 'Fresh Dairy Product',
       shortDesc: (p.description || '').slice(0, 120),
       fullDesc: p.description || '',
-      category: inferProductCategory(p.categories),
+      category: inferProductCategory(p.name || '', p.description || '', p.categories),
       sizes: variants.map((v) => v.name).filter(Boolean),
-      unitNote: (p.categories || []).join(' • '),
+      unitNote: (p.categories || []).filter((c) => typeof c === 'string' && c.length < 30).join(' • '),
       features:
         variants.length > 0
           ? variants.map((v) => `${v.name} — KSh ${v.price}`)
@@ -56,15 +66,44 @@ export function mapProducts(records: ProductRecord[] | null | undefined): Produc
   });
 }
 
+function inferServiceImage(title: string, image?: string): string {
+  if (image && (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:'))) {
+    return image;
+  }
+  const t = (title || '').toLowerCase();
+  if (t.includes('fresh milk') || t.includes('raw milk') || t.includes('milk supply')) {
+    return 'https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('yoghurt') || t.includes('dairy product') || t.includes('mala') || t.includes('butter')) {
+    return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('visit') || t.includes('tour') || t.includes('training') || t.includes('education')) {
+    return 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('wholesale') || t.includes('bulk') || t.includes('institution') || t.includes('commercial')) {
+    return 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?auto=format&fit=crop&w=800&q=80';
+  }
+  return FALLBACK_IMAGES.service;
+}
+
+function inferServiceId(s: FarmServiceRecord, index: number): string {
+  const t = (s.title || '').toLowerCase();
+  if (t.includes('fresh milk') || t.includes('milk supply')) return 'fresh-milk-supply';
+  if (t.includes('dairy product') || t.includes('yoghurt')) return 'dairy-products';
+  if (t.includes('visit') || t.includes('tour')) return 'farm-visits';
+  if (t.includes('wholesale') || t.includes('bulk')) return 'wholesale-supply';
+  return s._id || `api-service-${index}`;
+}
+
 export function mapServices(records: FarmServiceRecord[] | null | undefined): ServiceItem[] {
   if (!records || records.length === 0) return [];
   return records.map((s, index) => ({
-    id: s._id || `api-service-${index}`,
+    id: inferServiceId(s, index),
     title: s.title || 'Farm Service',
     shortDesc: (s.description || '').slice(0, 120),
     fullDesc: s.description || '',
     features: s.features || [],
-    image: s.image || FALLBACK_IMAGES.service,
+    image: inferServiceImage(s.title || '', s.image),
     ctaText: 'Book This Service',
     ctaAction: 'booking' as const,
   }));

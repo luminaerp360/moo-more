@@ -2,8 +2,11 @@ export const API_BASE_URL: string =
   import.meta.env.VITE_API_URL || 'https://ecommerse.lumina360.tech';
 
 export const TOKEN_KEY = 'access_token';
+export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const USER_KEY = 'user';
-export const TENANT_ID = 'default-tenant';
+export const TENANT_KEY = 'tenant_id';
+export const DEFAULT_TENANT_ID = 'moomore-dairy';
+export const TENANT_ID = DEFAULT_TENANT_ID;
 
 export class ApiError extends Error {
   status: number;
@@ -15,6 +18,24 @@ export class ApiError extends Error {
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getTenantId(): string {
+  const stored = localStorage.getItem(TENANT_KEY);
+  if (stored && stored !== 'default-tenant') {
+    return stored;
+  }
+  return DEFAULT_TENANT_ID;
+}
+
+export function setTenantId(tenantId: string): void {
+  if (tenantId) {
+    localStorage.setItem(TENANT_KEY, tenantId);
+  }
+}
+
+export function clearTenantId(): void {
+  localStorage.removeItem(TENANT_KEY);
 }
 
 export function getStoredUser<T>(): T | null {
@@ -32,25 +53,29 @@ export function setStoredUser(user: unknown): void {
 
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  clearTenantId();
 }
 
 async function request<T>(
   path: string,
   options: { method?: string; body?: unknown; headers?: Record<string, string>; withTenant?: boolean } = {}
 ): Promise<T> {
-  const { method = 'GET', body, headers = {}, withTenant = false } = options;
+  const { method = 'GET', body, headers = {} } = options;
 
   const finalHeaders: Record<string, string> = { ...headers };
-  if (body !== undefined) {
+  if (body !== undefined && !finalHeaders['Content-Type']) {
     finalHeaders['Content-Type'] = 'application/json';
   }
   const token = getToken();
-  if (token) {
+  if (token && !finalHeaders['Authorization']) {
     finalHeaders['Authorization'] = `Bearer ${token}`;
   }
-  if (withTenant) {
-    finalHeaders['x-tenant-id'] = TENANT_ID;
+
+  // Ensure x-tenant-id is present on all requests (required by API documentation)
+  if (!finalHeaders['x-tenant-id']) {
+    finalHeaders['x-tenant-id'] = getTenantId();
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
