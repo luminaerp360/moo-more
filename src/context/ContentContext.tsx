@@ -30,6 +30,7 @@ import { getTenantId } from '../services/api';
 
 interface SiteContentValue {
   loading: boolean;
+  initialLoading: boolean;
   currentTenantId: string;
   refetchContent: () => Promise<void>;
   refreshContent: () => Promise<void>;
@@ -62,6 +63,7 @@ const SiteContentContext = createContext<SiteContentValue | undefined>(undefined
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [currentTenantId, setCurrentTenantId] = useState<string>(() => getTenantId());
   const [hero, setHero] = useState<HeroSection | null>(null);
   const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([]);
@@ -143,6 +145,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.error(`Failed to load site content from API for tenant ${activeTenant}:`, err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, []);
 
@@ -193,6 +196,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const value: SiteContentValue = {
     loading,
+    initialLoading,
     currentTenantId,
     refetchContent: loadContent,
     refreshContent: loadContent,

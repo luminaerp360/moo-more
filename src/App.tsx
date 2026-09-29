@@ -10,6 +10,7 @@ import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { LegalModal } from './components/LegalModals';
+import { SiteLoader } from './components/SiteLoader';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { HomePage } from './pages/HomePage';
 import { ShopPage } from './pages/ShopPage';
@@ -44,7 +45,7 @@ export default function App() {
 
   const { isAuthenticated, isAdmin } = useAuth();
   const { addToCart, openCart } = useCart();
-  const { productItems } = useSiteContent();
+  const { productItems, initialLoading } = useSiteContent();
 
   const isAdminPage = (page: NavPage) => ADMIN_PAGES.includes(page);
   const showPublicChrome = currentPage !== 'login' && !isAdminPage(currentPage);
@@ -245,6 +246,11 @@ export default function App() {
   // 3. Public Website with Navbar, Animated Route transitions & Footer
   return (
     <div className="min-h-screen flex flex-col bg-white text-stone-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
+      {/* Full-screen Branded Loader while initial data loads from the database */}
+      <AnimatePresence>
+        {initialLoading && <SiteLoader key="site-loader" />}
+      </AnimatePresence>
+
       <Navbar
         currentPage={currentPage}
         onNavigate={handleNavigate}
