@@ -182,9 +182,14 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     verified: true,
   }));
 
-  const testimonialItems = dynamicTestimonials.length > 0
-    ? [...dynamicTestimonials, ...TESTIMONIALS]
-    : TESTIMONIALS;
+  const dynamicNames = new Set(dynamicTestimonials.map((d) => d.name.toLowerCase().trim()));
+  const extraStatic = TESTIMONIALS.filter(
+    (t) => !dynamicNames.has(t.name.toLowerCase().trim()),
+  );
+  const testimonialItems =
+    dynamicTestimonials.length > 0
+      ? [...dynamicTestimonials, ...extraStatic]
+      : TESTIMONIALS;
 
   const value: SiteContentValue = {
     loading,
