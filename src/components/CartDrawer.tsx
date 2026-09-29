@@ -75,33 +75,15 @@ export const CartDrawer: React.FC = () => {
                 </button>
               </div>
 
-              {/* Free Delivery Incentive Bar */}
-              <div className="px-5 py-2.5 bg-emerald-50/70 border-b border-emerald-100 text-xs text-emerald-950">
-                <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5 text-[#15803D]" />
-                    {amountToFreeDelivery > 0 ? (
-                      <span>
-                        Add <strong>KSh {amountToFreeDelivery.toLocaleString()}</strong> more for{' '}
-                        <span className="text-[#15803D] font-bold">Free Regional Delivery</span>
-                      </span>
-                    ) : (
-                      <span className="text-[#15803D] font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        You've unlocked Free Regional Delivery!
-                      </span>
-                    )}
-                  </span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <div className="w-full bg-emerald-200/60 h-1.5 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="bg-[#15803D] h-full rounded-full"
-                  />
-                </div>
+              {/* Dairy Basket Info Strip */}
+              <div className="px-5 py-2.5 bg-emerald-50/70 border-b border-emerald-100 text-xs text-emerald-950 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Sparkles className="w-3.5 h-3.5 text-[#15803D]" />
+                  <span>Add multiple items &amp; order via WhatsApp</span>
+                </span>
+                <span className="font-bold text-[#15803D]">
+                  {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                </span>
               </div>
 
               {/* Items List */}
@@ -201,17 +183,7 @@ export const CartDrawer: React.FC = () => {
                 <div className="p-5 border-t border-stone-200 bg-[#F4F7F4] space-y-3.5">
                   <div className="space-y-1.5 text-xs">
                     <div className="flex items-center justify-between text-stone-600">
-                      <span>Subtotal ({cartCount} items):</span>
-                      <span className="font-semibold text-stone-900">
-                        KSh {cartSubtotal.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-stone-600">
-                      <span>Cold-Chain Packing:</span>
-                      <span className="text-emerald-700 font-semibold">Included Free</span>
-                    </div>
-                    <div className="pt-2 border-t border-stone-200 flex items-center justify-between">
-                      <span className="font-bold text-sm text-[#0F3020]">Total Amount:</span>
+                      <span>Total ({cartCount} items):</span>
                       <span className="font-black text-lg text-[#15803D]">
                         KSh {cartSubtotal.toLocaleString()}
                       </span>
@@ -223,10 +195,9 @@ export const CartDrawer: React.FC = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => openCheckout()}
-                      className="w-full py-3 bg-[#0F3020] hover:bg-[#15803D] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                      <span>Proceed to Checkout</span>
+                      <span>Proceed to Complete Order</span>
                       <ArrowRight className="w-4 h-4" />
                     </motion.button>
 
@@ -234,19 +205,17 @@ export const CartDrawer: React.FC = () => {
                       onClick={closeCart}
                       className="w-full py-2 text-center text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
                     >
-                      Continue Shopping
+                      + Add More Products to Basket
                     </button>
                   </div>
 
                   <div className="pt-1 flex items-center justify-center gap-3 text-[10px] text-stone-500">
                     <span className="flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      M-Pesa Verified
+                      M-Pesa Till 5424564
                     </span>
                     <span>•</span>
-                    <span>Direct Farm Dispatch</span>
-                    <span>•</span>
-                    <span>Doorstep Delivery</span>
+                    <span>Instant WhatsApp Confirmation</span>
                   </div>
                 </div>
               )}

@@ -92,23 +92,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openCheckout = useCallback(
     (directProduct?: { product: ProductItem; selectedSize?: string; quantity?: number }) => {
       if (directProduct) {
-        const size = directProduct.selectedSize || directProduct.product.sizes[0] || 'Standard';
+        const size = directProduct.selectedSize || directProduct.product.sizes[0] || '1 Litre';
         const qty = directProduct.quantity || 1;
-        const unitPrice = calculateItemPrice(directProduct.product, size);
-        setCheckoutItem({
-          id: `${directProduct.product.id}-${size}`,
-          product: directProduct.product,
-          selectedSize: size,
-          quantity: qty,
-          unitPrice,
-        });
-      } else {
-        setCheckoutItem(null);
+        addToCart(directProduct.product, size, qty);
       }
       setIsCartOpen(false);
       setIsCheckoutOpen(true);
     },
-    [],
+    [addToCart],
   );
 
   const closeCheckout = useCallback(() => {

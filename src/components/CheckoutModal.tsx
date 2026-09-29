@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useCart, CartItem } from '../context/CartContext';
+import { useCart } from '../context/CartContext';
 import { useSiteContent } from '../context/ContentContext';
 import { ordersApi } from '../services/cms';
+import { FARM_INFO } from '../data/farmData';
 import {
   X,
   ShoppingBag,
   CheckCircle2,
-  ShieldCheck,
-  Truck,
   Building,
-  CreditCard,
   Phone,
   MapPin,
   Loader2,
@@ -18,8 +16,11 @@ import {
   ArrowRight,
   Printer,
   MessageCircle,
-  Info,
   Clock,
+  Plus,
+  Minus,
+  Trash2,
+  ChevronLeft,
 } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -31,18 +32,19 @@ interface CheckoutModalProps {
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen: propIsOpen,
   onClose: propOnClose,
-  preselectedProductId,
 }) => {
   const {
     cart,
     cartSubtotal,
     isCheckoutOpen,
     closeCheckout,
-    checkoutItem,
+    openCart,
     clearCart,
+    updateQuantity,
+    removeFromCart,
   } = useCart();
 
-  const { productItems } = useSiteContent();
+  const { productItems, settings } = useSiteContent();
 
   const isModalOpen = Boolean(propIsOpen || isCheckoutOpen);
   const handleClose = () => {
@@ -50,97 +52,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     closeCheckout();
   };
 
-  // Determine active checkout items:
-  // 1. Direct product selected via prop
-  // 2. Direct product selected via openCheckout(directProduct)
-  // 3. Or all items in the cart
-  const [activeItems, setActiveItems] = useState<CartItem[]>([]);
-
-  useEffect(() => {
-    if (preselectedProductId) {
-      const prod = productItems.find((p) => p.id === preselectedProductId) || productItems[0];
-      if (prod) {
-        setActiveItems([
-          {
-            id: `${prod.id}-${prod.sizes[0] || 'Default'}`,
-            product: prod,
-            selectedSize: prod.sizes[0] || '1 Litre',
-            quantity: 1,
-            unitPrice: prod.price || 120,
-          },
-        ]);
-        return;
-      }
-    }
-
-    if (checkoutItem) {
-      setActiveItems([checkoutItem]);
-    } else if (cart.length > 0) {
-      setActiveItems(cart);
-    } else if (productItems.length > 0) {
-      const defaultProd = productItems[0];
-      setActiveItems([
-        {
-          id: `${defaultProd.id}-${defaultProd.sizes[0] || 'Default'}`,
-          product: defaultProd,
-          selectedSize: defaultProd.sizes[0] || '1 Litre',
-          quantity: 1,
-          unitPrice: defaultProd.price || 120,
-        },
-      ]);
-    }
-  }, [preselectedProductId, checkoutItem, cart, productItems]);
-
   // Form Fields
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerLocation, setCustomerLocation] = useState('');
   const [customerType, setCustomerType] = useState<'individual' | 'business'>('individual');
   const [businessName, setBusinessName] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery');
-  const [deliveryTown, setDeliveryTown] = useState('Bumala / Dadira');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'cash' | 'card'>('mpesa');
   const [orderNotes, setOrderNotes] = useState('');
 
   // Submission & Confirmation state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [placedOrder, setPlacedOrder] = useState<any | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<{
+    id: string;
+    items: typeof cart;
+    customerName: string;
+    customerPhone: string;
+    customerLocation: string;
+    totalAmount: number;
+    whatsappUrl: string;
+    createdAt: string;
+  } | null>(null);
 
-  const deliveryFee = deliveryType === 'pickup' ? 0 : 150;
-  const itemsSubtotal = activeItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const grandTotal = itemsSubtotal + deliveryFee;
-
-  const updateItemQty = (id: string, delta: number) => {
-    setActiveItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const nextQty = item.quantity + delta;
-            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
-          }
-          return item;
-        })
-        .filter((item): item is CartItem => item !== null),
-    );
-  };
+  const grandTotal = cartSubtotal;
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!customerName.trim() || !customerPhone.trim()) {
-      setErrorMessage('Please provide your full name and a contact phone number.');
+    if (!customerName.trim()) {
+      setErrorMessage('Please enter your full name.');
       return;
     }
 
-    if (activeItems.length === 0) {
-      setErrorMessage('Your order basket has no items. Please select a product.');
+    if (!customerPhone.trim()) {
+      setErrorMessage('Please enter your WhatsApp / phone number.');
       return;
     }
 
-    if (deliveryType === 'delivery' && !deliveryAddress.trim()) {
-      setErrorMessage('Please provide a delivery street, landmark, or location.');
+    if (cart.length === 0) {
+      setErrorMessage('Your basket is empty. Please add items to your cart before ordering.');
       return;
     }
 
@@ -148,14 +98,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setIsSubmitting(true);
       setErrorMessage(null);
 
-      const formattedShippingAddress = `${customerName.trim()} | Phone: ${customerPhone.trim()} | Email: ${
-        customerEmail.trim() || 'N/A'
-      } | ${
-        deliveryType === 'pickup'
-          ? 'Farm Pickup at Dadira, Moo & More Gate'
-          : `Delivery to ${deliveryTown}: ${deliveryAddress.trim()}`
-      }${orderNotes ? ` | Note: ${orderNotes.trim()}` : ''}`;
-
+      // Resolve valid MongoDB ObjectId for backend schema
       const resolveProductId = (product: any): string => {
         const isMongoHex = (val?: string) => Boolean(val && /^[0-9a-fA-F]{24}$/.test(val));
         if (isMongoHex(product?.id)) return product.id;
@@ -169,8 +112,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         return '6ab5332555982e0b68013043';
       };
 
+      const formattedShippingAddress = `${customerName.trim()} | Phone: ${customerPhone.trim()} | Location: ${
+        customerLocation.trim() || 'Dadira / Local Pick up'
+      }${orderNotes ? ` | Note: ${orderNotes.trim()}` : ''}`;
+
       const payload = {
-        items: activeItems.map((item) => ({
+        items: cart.map((item) => ({
           productId: resolveProductId(item.product),
           quantity: item.quantity,
           price: item.unitPrice,
@@ -180,32 +127,67 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         customerType,
         businessName: customerType === 'business' ? businessName : undefined,
         shippingAddress: formattedShippingAddress,
-        paymentMethod,
+        paymentMethod: 'whatsapp-mpesa',
       };
 
+      // 1. Submit to backend API so it appears in Admin Orders Manager
       const result = await ordersApi.create(payload);
+      const orderId = result.id || (result as any)._id || `ORD-${Date.now().toString().slice(-6)}`;
+      const refFormatted = `#${String(orderId).slice(-6).toUpperCase()}`;
 
+      // 2. Generate formatted WhatsApp message text
+      const itemsListText = cart
+        .map(
+          (item) =>
+            `• ${item.quantity}x ${item.product.name} (${item.selectedSize}) — KSh ${(
+              item.unitPrice * item.quantity
+            ).toLocaleString()}`,
+        )
+        .join('\n');
+
+      const whatsappMessage = `🥛 *NEW ORDER - MOO & MORE DAIRY FARM*
+━━━━━━━━━━━━━━━━━━━━━━
+*Order ID:* ${refFormatted}
+*Customer:* ${customerName.trim()}
+*Phone:* ${customerPhone.trim()}
+*Location / Area:* ${customerLocation.trim() || 'Dadira / Local'}
+${customerType === 'business' && businessName ? `*Business:* ${businessName.trim()}\n` : ''}${
+        orderNotes.trim() ? `*Special Notes:* ${orderNotes.trim()}\n` : ''
+      }
+*ORDER ITEMS (${cart.reduce((sum, it) => sum + it.quantity, 0)} total):*
+${itemsListText}
+
+*TOTAL AMOUNT:* KSh ${grandTotal.toLocaleString()}
+*PAYMENT:* Lipa na M-Pesa Till: 5424564 / Cash
+━━━━━━━━━━━━━━━━━━━━━━
+Hello Moo & More Farm, I have placed my order via your website. Kindly confirm packaging and fulfillment. Thank you!`;
+
+      const rawWhatsapp =
+        settings?.socialSettings?.whatsapp || settings?.social?.whatsapp || FARM_INFO.phoneRaw;
+      const cleanPhone = rawWhatsapp.replace(/[^\d]/g, '');
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`;
+
+      // 3. Automatically launch WhatsApp in new tab
+      window.open(whatsappUrl, '_blank');
+
+      // 4. Update confirmation screen state
       setPlacedOrder({
-        id: result._id || (result as any).id || `ORD-${Date.now().toString().slice(-6)}`,
-        items: activeItems,
+        id: orderId,
+        items: [...cart],
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        deliveryType,
-        deliveryTown,
-        deliveryAddress: deliveryAddress.trim(),
+        customerLocation: customerLocation.trim() || 'Dadira / Local',
         totalAmount: grandTotal,
-        paymentMethod,
+        whatsappUrl,
         createdAt: new Date().toISOString(),
       });
 
-      // If user checked out the general cart, clear it now
-      if (!checkoutItem && !preselectedProductId) {
-        clearCart();
-      }
+      // 5. Clear cart
+      clearCart();
     } catch (err: any) {
       console.error('Failed to create order on API:', err);
       setErrorMessage(
-        err?.message || 'Could not place your order. Please check your network and try again.',
+        err?.message || 'Could not place your order. Please check your connection and try again.',
       );
     } finally {
       setIsSubmitting(false);
@@ -236,12 +218,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <div>
               <h3 className="font-serif-heading text-lg font-bold">
-                {placedOrder ? 'Order Confirmation' : 'Farm-Fresh Dairy Checkout'}
+                {placedOrder ? 'Order Confirmation' : 'Complete Your Farm Dairy Order'}
               </h3>
               <p className="text-[11px] text-emerald-200">
                 {placedOrder
-                  ? 'Your order is recorded and being prepared for fulfillment'
-                  : 'Fast doorstep delivery or free Dadira farm gate pickup • Busia County'}
+                  ? 'Your order is recorded and sent to WhatsApp'
+                  : 'Add customer details and send directly to Moo & More on WhatsApp'}
               </p>
             </div>
           </div>
@@ -270,8 +252,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   Thank You, {placedOrder.customerName}!
                 </h4>
                 <p className="text-xs text-stone-600 max-w-md mx-auto">
-                  Your order has been officially placed with <strong>Moo &amp; More Dairy Farm</strong>.
-                  Our dispatch manager has received your request and is packing your fresh dairy.
+                  Your order has been officially registered and sent to{' '}
+                  <strong>Moo &amp; More Farm Dispatch</strong> via WhatsApp.
                 </p>
               </div>
 
@@ -282,28 +264,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     Order Reference ID
                   </span>
                   <span className="font-mono font-bold text-sm text-[#0F3020]">
-                    #{String(placedOrder.id).slice(-8).toUpperCase()}
+                    #{String(placedOrder.id).slice(-6).toUpperCase()}
                   </span>
                 </div>
 
                 <div>
                   <span className="text-stone-500 block text-[10px] uppercase font-bold tracking-wider">
-                    Order Status
+                    Status
                   </span>
                   <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full text-[11px]">
                     <Clock className="w-3 h-3" />
-                    Confirmed &amp; Queued
+                    Sent to WhatsApp
                   </span>
                 </div>
 
                 <div>
                   <span className="text-stone-500 block text-[10px] uppercase font-bold tracking-wider">
-                    Fulfillment Method
+                    Location / Area
                   </span>
                   <span className="font-semibold text-stone-800">
-                    {placedOrder.deliveryType === 'pickup'
-                      ? 'Farm Pickup (Dadira)'
-                      : `Delivery to ${placedOrder.deliveryTown}`}
+                    {placedOrder.customerLocation}
                   </span>
                 </div>
               </div>
@@ -315,7 +295,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>Amount</span>
                 </div>
                 <div className="divide-y divide-stone-100 p-2">
-                  {placedOrder.items.map((item: CartItem) => (
+                  {placedOrder.items.map((item) => (
                     <div
                       key={item.id}
                       className="px-2 py-2.5 flex items-center justify-between gap-3"
@@ -333,503 +313,374 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           </div>
                         </div>
                       </div>
-                      <span className="font-bold text-stone-800">
+                      <div className="font-bold text-stone-900">
                         KSh {(item.unitPrice * item.quantity).toLocaleString()}
-                      </span>
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="bg-stone-50/70 px-4 py-3 border-t border-stone-200 space-y-1 text-xs">
-                  <div className="flex justify-between text-stone-600">
-                    <span>Delivery Fee:</span>
-                    <span>
-                      {placedOrder.deliveryType === 'pickup'
-                        ? 'FREE (Farm Pickup)'
-                        : `KSh ${deliveryFee.toLocaleString()}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-bold text-sm text-[#0F3020] pt-1 border-t border-stone-200">
-                    <span>Total Amount:</span>
-                    <span className="text-[#15803D] text-base">
+                {/* Subtotals & Total */}
+                <div className="bg-stone-50/80 px-4 py-3 border-t border-stone-200 space-y-1">
+                  <div className="flex justify-between font-bold text-sm text-[#0F3020] pt-1">
+                    <span>Grand Total:</span>
+                    <span className="text-[#15803D] font-black text-base">
                       KSh {placedOrder.totalAmount.toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Instructions Box */}
-              <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-amber-900">
-                  <CreditCard className="w-4 h-4 text-amber-700" />
-                  <span>Payment Instructions</span>
+              {/* Payment Instructions Card */}
+              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs space-y-1.5">
+                <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                  <span>Payment Instructions:</span>
                 </div>
-                {placedOrder.paymentMethod === 'mpesa' ? (
-                  <div className="space-y-1 text-stone-700">
-                    <p>
-                      Please pay via <strong>Lipa Na M-Pesa (Buy Goods &amp; Services)</strong>:
-                    </p>
-                    <div className="inline-block bg-white px-3 py-1.5 rounded-lg border border-amber-300 font-mono text-xs font-bold text-[#0F3020]">
-                      Till Number: <span className="text-[#15803D] text-sm">5424564</span> • Moo &amp;
-                      More Dairy
-                    </div>
-                    <p className="text-[11px] text-stone-500 mt-1">
-                      Our dispatch rider will verify your payment SMS upon delivery, or you can present
-                      the SMS when picking up at Dadira farm.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-stone-700">
-                    You selected <strong>Cash on Delivery / Pickup</strong>. Please have the exact
-                    amount of <strong>KSh {placedOrder.totalAmount.toLocaleString()}</strong> ready upon
-                    receipt.
-                  </p>
-                )}
+                <p className="text-amber-800 text-[11px]">
+                  Pay upon receiving your fresh dairy via Lipa na M-Pesa:
+                </p>
+                <div className="bg-white p-2.5 rounded-lg border border-amber-300 font-mono text-xs font-bold text-stone-800 flex items-center justify-between">
+                  <span>Buy Goods Till Number:</span>
+                  <span className="text-emerald-700 font-black text-sm">5424564</span>
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* Post-order Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <a
+                  href={placedOrder.whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Open WhatsApp Conversation Again</span>
+                </a>
+
                 <button
                   onClick={() => window.print()}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Print Receipt</span>
                 </button>
 
-                <a
-                  href={`https://wa.me/254711320959?text=${encodeURIComponent(
-                    `Hello Moo & More Farm, I just placed order #${String(placedOrder.id)
-                      .slice(-8)
-                      .toUpperCase()} for ${placedOrder.customerName} (KSh ${placedOrder.totalAmount.toLocaleString()}). Please confirm dispatch schedule.`,
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat on WhatsApp</span>
-                </a>
-
                 <button
                   onClick={resetAndClose}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#0F3020] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-5 py-3 bg-[#0F3020] hover:bg-[#15803D] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
                 >
-                  Continue Shopping
+                  Done / Order More Products
                 </button>
               </div>
             </div>
           ) : (
             /* ------------------------------------------------------------- */
-            /* 2. ECOMMERCE CHECKOUT FORM (2-COLUMN MODERN LAYOUT)           */
+            /* 2. ECOMMERCE CHECKOUT & WHATSAPP DISPATCH FORM               */
             /* ------------------------------------------------------------- */
-            <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* LEFT COLUMN: Customer, Shipping & Payment (7 Cols) */}
-              <div className="lg:col-span-7 space-y-5 text-left">
-                {errorMessage && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                    <span>{errorMessage}</span>
-                  </div>
-                )}
-
-                {/* 1. Customer Type Pill Selector */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    1. Account / Order Type
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 bg-stone-100 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setCustomerType('individual')}
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                        customerType === 'individual'
-                          ? 'bg-white text-[#0F3020] shadow-xs'
-                          : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      Individual / Home Family
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCustomerType('business')}
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                        customerType === 'business'
-                          ? 'bg-white text-[#0F3020] shadow-xs'
-                          : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      Commercial / Wholesale
-                    </button>
+            <form onSubmit={handlePlaceOrder} className="space-y-6">
+              {errorMessage && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Cannot place order: </span>
+                    {errorMessage}
                   </div>
                 </div>
+              )}
 
-                {/* 2. Contact Information */}
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-stone-700">
-                    2. Contact Details
-                  </label>
+              {/* Back to add more items shortcut */}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClose();
+                    openCart();
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#15803D] hover:underline cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>View &amp; Edit Basket Items</span>
+                </button>
 
+                <span className="text-xs text-stone-500 font-medium">
+                  {cart.length} {cart.length === 1 ? 'item' : 'items'} in your order
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+                {/* LEFT COLUMN: Customer Information */}
+                <div className="lg:col-span-7 space-y-5">
+                  {/* Customer Type Selector */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-800 mb-2">
+                      Order Type:
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCustomerType('individual')}
+                        className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                          customerType === 'individual'
+                            ? 'bg-[#0F3020] text-white border-[#0F3020] shadow-xs'
+                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        Individual / Household
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCustomerType('business')}
+                        className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                          customerType === 'business'
+                            ? 'bg-[#0F3020] text-white border-[#0F3020] shadow-xs'
+                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        Business / Hotel / Bulk
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Business Name if commercial */}
                   {customerType === 'business' && (
                     <div>
-                      <input
-                        type="text"
-                        required
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="Business or Cafe Name (e.g., Acacia Coffee Lounge)"
-                        className="w-full px-3.5 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
-                      />
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Business / Hotel / School Name:
+                      </label>
+                      <div className="relative">
+                        <Building className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          value={businessName}
+                          onChange={(e) => setBusinessName(e.target.value)}
+                          placeholder="e.g. Bumala Sunrise Hotel"
+                          className="w-full pl-9 pr-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-1 focus:ring-[#15803D] focus:outline-hidden"
+                        />
+                      </div>
                     </div>
                   )}
 
+                  {/* Name & Phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Full Name *
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Your Full Name *
                       </label>
                       <input
                         type="text"
                         required
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="e.g. Kennedy Ochieng"
-                        className="w-full px-3.5 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                        placeholder="e.g. Joseph Ochieng"
+                        className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-1 focus:ring-[#15803D] focus:outline-hidden"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Phone / M-Pesa Number *
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        WhatsApp / Phone Number *
                       </label>
-                      <input
-                        type="tel"
-                        required
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="0712 345 678"
-                        className="w-full px-3.5 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
-                      />
+                      <div className="relative">
+                        <Phone className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-3" />
+                        <input
+                          type="tel"
+                          required
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="e.g. 0711 320 959"
+                          className="w-full pl-8 pr-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-1 focus:ring-[#15803D] focus:outline-hidden"
+                        />
+                      </div>
                     </div>
                   </div>
 
+                  {/* Location / Area / Landmark */}
                   <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                      Email Address (Optional, for instant receipt)
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Town / Location / Area / Landmark *
                     </label>
-                    <input
-                      type="email"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      placeholder="kennedy@example.com"
-                      className="w-full px-3.5 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        required
+                        value={customerLocation}
+                        onChange={(e) => setCustomerLocation(e.target.value)}
+                        placeholder="e.g. Busia CBD near Post Office / Bumala Centre / Dadira"
+                        className="w-full pl-9 pr-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-1 focus:ring-[#15803D] focus:outline-hidden"
+                      />
+                    </div>
+                    <span className="text-[10px] text-stone-400 mt-1 block">
+                      Tell us your town or estate so the farm driver knows where to route your dairy.
+                    </span>
+                  </div>
+
+                  {/* Special Order Notes */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Special Order Notes / Instructions (Optional):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      placeholder="e.g. Deliver before 9 AM, chilled cold chain required"
+                      className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:ring-1 focus:ring-[#15803D] focus:outline-hidden"
                     />
                   </div>
+
+                  {/* Information Box: WhatsApp & Payment */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs space-y-1.5 text-emerald-950">
+                    <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                      <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                      <span>Instant WhatsApp Dispatch</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 leading-relaxed">
+                      When you click <strong>Place Order</strong> below, your items will be recorded
+                      in our farm database and a complete order message will immediately open on{' '}
+                      <strong>WhatsApp</strong> to Moo &amp; More Farm for quick confirmation and
+                      dispatch.
+                    </p>
+                    <div className="pt-1 text-[11px] font-semibold text-emerald-900">
+                      💳 Pay on delivery/pickup via M-Pesa Till: <strong>5424564</strong> or Cash.
+                    </div>
+                  </div>
                 </div>
 
-                {/* 3. Fulfillment Option */}
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-stone-700">
-                    3. How would you like to receive your dairy?
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <label
-                      onClick={() => setDeliveryType('delivery')}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        deliveryType === 'delivery'
-                          ? 'border-[#15803D] bg-emerald-50/50 ring-1 ring-[#15803D]'
-                          : 'border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="fulfillment"
-                        checked={deliveryType === 'delivery'}
-                        onChange={() => setDeliveryType('delivery')}
-                        className="mt-0.5 text-[#15803D] focus:ring-[#15803D]"
-                      />
-                      <div>
-                        <div className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                          <Truck className="w-3.5 h-3.5 text-[#15803D]" />
-                          Doorstep Delivery
-                        </div>
-                        <div className="text-[11px] text-stone-500 mt-0.5">
-                          Cold courier dispatch (+KSh 150)
-                        </div>
-                      </div>
-                    </label>
-
-                    <label
-                      onClick={() => setDeliveryType('pickup')}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        deliveryType === 'pickup'
-                          ? 'border-[#15803D] bg-emerald-50/50 ring-1 ring-[#15803D]'
-                          : 'border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="fulfillment"
-                        checked={deliveryType === 'pickup'}
-                        onChange={() => setDeliveryType('pickup')}
-                        className="mt-0.5 text-[#15803D] focus:ring-[#15803D]"
-                      />
-                      <div>
-                        <div className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                          <Building className="w-3.5 h-3.5 text-stone-700" />
-                          Dadira Farm Pickup
-                        </div>
-                        <div className="text-[11px] text-emerald-700 font-bold mt-0.5">
-                          FREE • Dadira Gate, Bumala
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {deliveryType === 'delivery' ? (
-                    <div className="space-y-2.5 pt-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                            Town / Region
-                          </label>
-                          <select
-                            value={deliveryTown}
-                            onChange={(e) => setDeliveryTown(e.target.value)}
-                            className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D] bg-white"
-                          >
-                            <option value="Bumala / Dadira">Bumala / Dadira (Local)</option>
-                            <option value="Busia Town">Busia Town &amp; Environs</option>
-                            <option value="Kisumu">Kisumu City &amp; Suburbs</option>
-                            <option value="Kakamega">Kakamega Town</option>
-                            <option value="Eldoret">Eldoret &amp; Uasin Gishu</option>
-                            <option value="Nairobi Delivery Route">Nairobi Regional Depot</option>
-                            <option value="Other Kenyan Town">Other (Specified in address)</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                            Street, Estate or Landmark *
-                          </label>
-                          <input
-                            type="text"
-                            required={deliveryType === 'delivery'}
-                            value={deliveryAddress}
-                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                            placeholder="e.g. Near Bumala Market, House 12"
-                            className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-600 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-[#15803D] shrink-0" />
-                      <span>
-                        Pick up directly at Moo &amp; More Farm, Dadira, 7km off Bumala Centre,
-                        Kisumu–Busia Highway. Open Mon–Sat 7:00 AM – 6:00 PM.
+                {/* RIGHT COLUMN: Order Items Summary */}
+                <div className="lg:col-span-5 bg-stone-50 rounded-2xl p-4 sm:p-5 border border-stone-200 flex flex-col justify-between space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                      <h4 className="font-serif-heading font-bold text-sm text-[#0F3020]">
+                        Order Summary
+                      </h4>
+                      <span className="text-[11px] font-semibold text-stone-500">
+                        {cart.length} {cart.length === 1 ? 'item' : 'items'}
                       </span>
                     </div>
-                  )}
-                </div>
 
-                {/* 4. Payment Method */}
-                <div className="space-y-2.5">
-                  <label className="block text-xs font-bold text-stone-700">
-                    4. Payment Method
-                  </label>
+                    {/* Items List */}
+                    <div className="divide-y divide-stone-200/70 max-h-60 overflow-y-auto pr-1 mt-2">
+                      {cart.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-stone-500">
+                          Your basket is empty. Please add products to order.
+                        </div>
+                      ) : (
+                        cart.map((item) => (
+                          <div key={item.id} className="py-2.5 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <img
+                                src={item.product.image}
+                                alt={item.product.name}
+                                className="w-10 h-10 rounded-lg object-cover border border-stone-200 shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <h5 className="font-bold text-xs text-stone-900 truncate">
+                                  {item.product.name}
+                                </h5>
+                                <div className="text-[10px] text-stone-500">
+                                  {item.selectedSize} • KSh {item.unitPrice}
+                                </div>
+                              </div>
+                            </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label
-                      onClick={() => setPaymentMethod('mpesa')}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        paymentMethod === 'mpesa'
-                          ? 'border-[#15803D] bg-emerald-50/50 ring-1 ring-[#15803D]'
-                          : 'border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === 'mpesa'}
-                        onChange={() => setPaymentMethod('mpesa')}
-                        className="text-[#15803D] focus:ring-[#15803D]"
-                      />
-                      <span className="font-bold text-xs text-stone-900">
-                        Lipa na M-Pesa (Till)
-                      </span>
-                    </label>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Quantity controls */}
+                              <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md p-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, -1)}
+                                  className="w-5 h-5 flex items-center justify-center text-stone-600 hover:text-stone-900 cursor-pointer"
+                                >
+                                  <Minus className="w-2.5 h-2.5" />
+                                </button>
+                                <span className="w-4 text-center text-xs font-bold text-stone-900">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, 1)}
+                                  className="w-5 h-5 flex items-center justify-center text-stone-600 hover:text-stone-900 cursor-pointer"
+                                >
+                                  <Plus className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
 
-                    <label
-                      onClick={() => setPaymentMethod('cash')}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        paymentMethod === 'cash'
-                          ? 'border-[#15803D] bg-emerald-50/50 ring-1 ring-[#15803D]'
-                          : 'border-stone-200 hover:border-stone-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === 'cash'}
-                        onChange={() => setPaymentMethod('cash')}
-                        className="text-[#15803D] focus:ring-[#15803D]"
-                      />
-                      <span className="font-bold text-xs text-stone-900">
-                        Cash on Delivery / Pickup
-                      </span>
-                    </label>
+                              <span className="font-bold text-xs text-[#15803D] min-w-[55px] text-right">
+                                KSh {(item.unitPrice * item.quantity).toLocaleString()}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-stone-400 hover:text-red-600 p-1 cursor-pointer"
+                                title="Remove"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
 
-                  {paymentMethod === 'mpesa' && (
-                    <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-[#15803D] shrink-0" />
-                        <span>
-                          Buy Goods Till: <strong>5424564</strong> (Moo &amp; More Farm)
+                  {/* Financial Breakdown */}
+                  <div className="space-y-3 pt-3 border-t border-stone-200">
+                    <div className="space-y-1.5 text-xs text-stone-600">
+                      <div className="flex justify-between">
+                        <span>Items Subtotal:</span>
+                        <span className="font-semibold text-stone-900">
+                          KSh {cartSubtotal.toLocaleString()}
                         </span>
                       </div>
-                      <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-emerald-300 font-semibold text-emerald-800">
-                        Instant
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* 5. Special Notes */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                    Order / Delivery Notes (Optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
-                    placeholder="e.g. Please call before reaching Dadira junction, or pack in cooler box."
-                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#15803D]/20 focus:border-[#15803D] resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN: Order Summary & Placement (5 Cols) */}
-              <div className="lg:col-span-5 bg-[#F4F7F4] p-5 rounded-2xl border border-stone-200 flex flex-col justify-between text-left space-y-4">
-                <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-                    <h4 className="font-serif-heading font-bold text-sm text-[#0F3020]">
-                      Order Summary ({activeItems.length}{' '}
-                      {activeItems.length === 1 ? 'variety' : 'varieties'})
-                    </h4>
-                  </div>
-
-                  {/* Items List inside Checkout */}
-                  <div className="divide-y divide-stone-200/70 max-h-60 overflow-y-auto pr-1 my-3">
-                    {activeItems.map((item) => (
-                      <div key={item.id} className="py-2.5 flex items-center justify-between gap-2.5">
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-12 h-12 rounded-lg object-cover border border-stone-200 bg-white shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-bold text-xs text-stone-900 truncate">
-                            {item.product.name}
-                          </h5>
-                          <span className="text-[10px] text-stone-500 font-medium">
-                            {item.selectedSize}
-                          </span>
-                          <div className="text-xs font-bold text-[#15803D]">
-                            KSh {(item.unitPrice * item.quantity).toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Stepper */}
-                        <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-md p-0.5">
-                          <button
-                            type="button"
-                            onClick={() => updateItemQty(item.id, -1)}
-                            className="w-5 h-5 flex items-center justify-center text-stone-600 hover:text-black"
-                          >
-                            -
-                          </button>
-                          <span className="w-5 text-center text-xs font-bold">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateItemQty(item.id, 1)}
-                            className="w-5 h-5 flex items-center justify-center text-stone-600 hover:text-black"
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="flex justify-between text-[#15803D] font-semibold text-[11px]">
+                        <span>Payment Terms:</span>
+                        <span>Pay on Delivery / Till 5424564</span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
 
-                  {/* Calculations */}
-                  <div className="border-t border-stone-200 pt-3 space-y-2 text-xs">
-                    <div className="flex justify-between text-stone-600">
-                      <span>Items Subtotal:</span>
-                      <span className="font-semibold text-stone-800">
-                        KSh {itemsSubtotal.toLocaleString()}
+                    <div className="pt-2 border-t border-stone-200 flex justify-between items-baseline">
+                      <span className="font-serif-heading font-bold text-sm text-[#0F3020]">
+                        Total Amount:
                       </span>
-                    </div>
-
-                    <div className="flex justify-between text-stone-600">
-                      <span>Fulfillment / Delivery:</span>
-                      <span className="font-semibold text-stone-800">
-                        {deliveryType === 'pickup' ? (
-                          <span className="text-emerald-700 font-bold">FREE (Farm Gate)</span>
-                        ) : (
-                          `KSh ${deliveryFee.toLocaleString()}`
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-stone-600">
-                      <span>Cold Chain Packaging:</span>
-                      <span className="text-emerald-700 font-bold">Included</span>
-                    </div>
-
-                    <div className="pt-2 border-t border-stone-300 flex justify-between items-baseline">
-                      <span className="font-bold text-sm text-[#0F3020]">Total Amount:</span>
                       <span className="font-black text-xl text-[#15803D]">
                         KSh {grandTotal.toLocaleString()}
                       </span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Checkout Button & Security Badges */}
-                <div className="space-y-2.5 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || activeItems.length === 0}
-                    className="w-full py-3.5 bg-[#0F3020] hover:bg-[#15803D] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Confirming &amp; Placing Order...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                        <span>Place Order (KSh {grandTotal.toLocaleString()})</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
+                    {/* WhatsApp Place Order CTA */}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={isSubmitting || cart.length === 0}
+                      className="w-full py-3.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Recording Order &amp; Opening WhatsApp...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-4 h-4" />
+                          <span>Place Order &amp; Send via WhatsApp</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </motion.button>
 
-                  <div className="flex items-center justify-center gap-3 text-[10px] text-stone-500 text-center">
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      Guaranteed Fresh
-                    </span>
-                    <span>•</span>
-                    <span>Direct Farm Dispatch</span>
-                    <span>•</span>
-                    <span>Fast Delivery</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleClose();
+                        openCart();
+                      }}
+                      className="w-full py-2 text-center text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
+                    >
+                      + Add More Items to Basket
+                    </button>
                   </div>
                 </div>
               </div>

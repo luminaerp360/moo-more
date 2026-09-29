@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavPage, ADMIN_PAGES } from './types';
 import { useAuth } from './context/AuthContext';
+import { useCart } from './context/CartContext';
+import { useSiteContent } from './context/ContentContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
-import { OrderModal } from './components/OrderModal';
 import { CartDrawer } from './components/CartDrawer';
+import { CheckoutModal } from './components/CheckoutModal';
 import { LegalModal } from './components/LegalModals';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { HomePage } from './pages/HomePage';
@@ -38,11 +40,11 @@ import { ReviewsManager } from './pages/admin/ReviewsManager';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>('home');
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [preselectedProduct, setPreselectedProduct] = useState<string | undefined>(undefined);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
 
   const { isAuthenticated, isAdmin } = useAuth();
+  const { addToCart, openCart } = useCart();
+  const { productItems } = useSiteContent();
 
   const isAdminPage = (page: NavPage) => ADMIN_PAGES.includes(page);
   const showPublicChrome = currentPage !== 'login' && !isAdminPage(currentPage);
@@ -100,8 +102,14 @@ export default function App() {
   };
 
   const handleOpenOrder = (productId?: string) => {
-    setPreselectedProduct(productId);
-    setIsOrderModalOpen(true);
+    if (productId) {
+      const prod = productItems.find((p) => p.id === productId);
+      if (prod) {
+        addToCart(prod, prod.sizes[0] || '1 Litre', 1);
+        return;
+      }
+    }
+    openCart();
   };
 
   const renderAdminContent = () => {
@@ -268,12 +276,8 @@ export default function App() {
       {/* Slide-over eCommerce Cart Drawer */}
       <CartDrawer />
 
-      {/* Interactive Order Milk / Product Modal */}
-      <OrderModal
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        preselectedProductId={preselectedProduct}
-      />
+      {/* Multi-item Checkout & WhatsApp Dispatch Modal */}
+      <CheckoutModal />
 
       {/* Legal Disclaimers & Privacy Policy Modal */}
       <LegalModal
