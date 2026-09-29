@@ -84,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenOrder }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
           {/* Brand Column (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <BrandLogo size="lg" variant="dark" />
+            <BrandLogo size="lg" badge />
             <p className="text-stone-300 text-sm leading-relaxed mt-4">
               Moo &amp; More Dairy Farm is a premier dairy and livestock enterprise based in Dadira, Kenya. We produce pure, wholesome fresh cow milk, handcrafted artisanal yoghurts, and provide expert breeding &amp; livestock management services.
             </p>

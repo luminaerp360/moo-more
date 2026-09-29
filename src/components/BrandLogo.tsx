@@ -9,6 +9,7 @@ interface BrandLogoProps {
   variant?: 'light' | 'dark';
   className?: string;
   showTagline?: boolean;
+  badge?: boolean;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
@@ -16,6 +17,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   variant = 'light',
   className = '',
   showTagline = true,
+  badge = false,
 }) => {
   // Dimensions mapping
   const sizeMap = {
@@ -26,12 +28,17 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   };
 
   const { width, height } = sizeMap[size];
+  const isDarkText = variant === 'dark' && !badge;
 
-  return (
+  const content = (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      {/* Crisp vector logo icon */}
+      {/* Crisp vector logo icon with high-contrast background when on dark themes */}
       <div 
-        className="relative shrink-0 flex items-center justify-center transition-transform hover:scale-105"
+        className={`relative shrink-0 flex items-center justify-center transition-transform hover:scale-105 ${
+          variant === 'dark' || badge
+            ? 'bg-white p-1.5 rounded-xl shadow-xs'
+            : ''
+        }`}
         style={{ width: `${width}px`, height: `${height}px` }}
       >
         <img
@@ -43,7 +50,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             }
           }}
           alt="Moo & More Dairy Farm Logo - It's all about quality"
-          className="w-full h-full object-contain filter drop-shadow-sm"
+          className="w-full h-full object-contain filter drop-shadow-xs"
           loading="eager"
         />
       </div>
@@ -52,7 +59,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <div className="flex flex-col leading-tight">
         <span 
           className={`font-serif-heading font-black tracking-wide uppercase transition-colors ${
-            variant === 'dark' ? 'text-white' : 'text-[#0F3020]'
+            isDarkText ? 'text-white' : 'text-[#0F3020]'
           } ${
             size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : size === 'xl' ? 'text-3xl' : 'text-lg'
           }`}
@@ -61,7 +68,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         </span>
         <span 
           className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${
-            variant === 'dark' ? 'text-emerald-300' : 'text-[#15803D]'
+            isDarkText ? 'text-emerald-300' : 'text-[#15803D]'
           }`}
         >
           Dairy Farm
@@ -69,7 +76,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         {showTagline && (
           <span 
             className={`font-script text-xs sm:text-sm leading-none italic font-semibold ${
-              variant === 'dark' ? 'text-amber-200' : 'text-[#16A34A]'
+              isDarkText ? 'text-amber-200' : 'text-[#16A34A]'
             }`}
           >
             It's all about quality
@@ -78,4 +85,14 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       </div>
     </div>
   );
+
+  if (badge) {
+    return (
+      <div className="inline-flex items-center p-2.5 px-3.5 sm:px-4 bg-white rounded-2xl shadow-lg border border-white/20 transition-transform hover:scale-[1.01]">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
 };
