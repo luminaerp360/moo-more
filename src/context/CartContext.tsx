@@ -89,24 +89,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
-  const openCheckout = useCallback(
-    (directProduct?: { product: ProductItem; selectedSize?: string; quantity?: number }) => {
-      if (directProduct) {
-        const size = directProduct.selectedSize || directProduct.product.sizes[0] || '1 Litre';
-        const qty = directProduct.quantity || 1;
-        addToCart(directProduct.product, size, qty);
-      }
-      setIsCartOpen(false);
-      setIsCheckoutOpen(true);
-    },
-    [addToCart],
-  );
-
-  const closeCheckout = useCallback(() => {
-    setIsCheckoutOpen(false);
-    setCheckoutItem(null);
-  }, []);
-
   const addToCart = useCallback(
     (product: ProductItem, selectedSize?: string, quantity: number = 1) => {
       const size = selectedSize || product.sizes[0] || 'Standard';
@@ -140,6 +122,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     [],
   );
+
+  const openCheckout = useCallback(
+    (directProduct?: { product: ProductItem; selectedSize?: string; quantity?: number }) => {
+      if (directProduct) {
+        const size = directProduct.selectedSize || directProduct.product.sizes[0] || '1 Litre';
+        const qty = directProduct.quantity || 1;
+        addToCart(directProduct.product, size, qty);
+      }
+      setIsCartOpen(false);
+      setIsCheckoutOpen(true);
+    },
+    [addToCart],
+  );
+
+  const closeCheckout = useCallback(() => {
+    setIsCheckoutOpen(false);
+    setCheckoutItem(null);
+  }, []);
 
   const removeFromCart = useCallback((itemId: string) => {
     setCart((prev) => prev.filter((item) => item.id !== itemId));
