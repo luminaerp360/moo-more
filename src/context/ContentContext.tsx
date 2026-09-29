@@ -25,7 +25,7 @@ import {
 } from '../types';
 import { homeContentApi, aboutApi, farmServicesApi, teamApi, galleryApi, blogsApi, productsApi, settingsApi, reviewsApi } from '../services/cms';
 import { mapProducts, mapServices, mapBlogs, mapGallery, mapTeam } from '../services/contentMaps';
-import { PRODUCTS, SERVICES, BLOG_POSTS, GALLERY_ITEMS, TEAM_MEMBERS } from '../data/farmData';
+import { PRODUCTS, SERVICES, BLOG_POSTS, GALLERY_ITEMS, TEAM_MEMBERS, TESTIMONIALS } from '../data/farmData';
 import { getTenantId } from '../services/api';
 
 interface SiteContentValue {
